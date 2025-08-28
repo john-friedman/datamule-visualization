@@ -31,32 +31,32 @@ def get_portfolio():
 
 @app.route('/submission/<accession>/document/<int:index>')
 def document_view(accession, index):
-    portfolio = get_portfolio()
-    if not portfolio:
-        return redirect('/')
-    
-    submission = next((sub for sub in portfolio if sub.accession == accession), None)
-    if not submission:
-        flash(f"Submission {accession} not found", "error")
-        return redirect('/portfolio')
-    
-    try:
-        if index >= len(submission.metadata.content['documents']):
-            flash(f"Document index {index} out of range", "error")
-            return redirect(f'/submission/{accession}')
-            
-        document = submission._load_document_by_index(index)
-        
-        content = document.content
-        if isinstance(content, bytes):
-            content = content.decode('utf-8', errors='replace')
-        
-        return f"<pre>{content}</pre>"
-        
-    except Exception as e:
-        flash(f"Error loading document: {str(e)}", "error")
-        return redirect(f'/submission/{accession}')
-
+   portfolio = get_portfolio()
+   if not portfolio:
+       return redirect('/')
+   
+   submission = next((sub for sub in portfolio if sub.accession == accession), None)
+   if not submission:
+       flash(f"Submission {accession} not found", "error")
+       return redirect('/portfolio')
+   
+   try:
+       if index >= len(submission.metadata.content['documents']):
+           flash(f"Document index {index} out of range", "error")
+           return redirect(f'/submission/{accession}')
+           
+       document = submission._load_document_by_index(index)
+       
+       content = document.content
+       if isinstance(content, bytes):
+           content = content.decode('utf-8', errors='replace')
+       
+       return render_template('document.html', document=document, submission=submission, content=content)
+       
+   except Exception as e:
+       flash(f"Error loading document: {str(e)}", "error")
+       return redirect(f'/submission/{accession}')
+   
 @app.route('/submission/<accession>', methods=['GET', 'POST'])
 def submission_view(accession):
     portfolio = get_portfolio()

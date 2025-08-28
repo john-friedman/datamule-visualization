@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Document - {{ document.path }}</title>
+</head>
+
+<body>
+    <h1>Document Details</h1>
+    <a href="/submission/{{ submission.accession }}">← Back to Submission</a>
+
+    <h2>Basic Information</h2>
+    <p><strong>Path:</strong> {{ document.path }}</p>
+    <p><strong>Extension:</strong> {{ document.extension }}</p>
+    <p><strong>Filing Date:</strong> {{ document.filing_date }}</p>
+    <p><strong>Type:</strong> {{ document.type }}</p>
+
+    <details>
+        <summary>Content</summary>
+        <pre>{{ content }}</pre>
+    </details>
+
+    <details>
+        <summary>Text</summary>
+        <pre>{{ document.text }}</pre>
+    </details>
+
+    <details>
+        <summary>Data</summary>
+        <pre>{{ document.data | tojson(indent=2) }}</pre>
+    </details>
+    {% if document.tables %}
+    <details>
+        <summary>
+            Tables ({{ document.tables|length }})
+        </summary>
+        {% for table in document.tables %}
+        <details>
+            <summary>{{ table.name }} ({{ table.data|length }} rows)</summary>
+            <table border="1">
+                {% if table.data %}
+                <tr>
+                    {% for column in table.data[0].keys() %}
+                    <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+                {% for row in table.data %}
+                <tr>
+                    {% for value in row.values() %}
+                    <td>{{ value or 'N/A' }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </table>
+        </details>
+        {% endfor %}
+    </details>
+    {% endif %}
+</body>
+
+</html>
