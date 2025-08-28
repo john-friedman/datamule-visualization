@@ -13,9 +13,6 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 - You like visualizations
 
 ## Features TBD
-- Download filings from client
-- Portfolio page where you can select Submissions. Probably will have nice metadata interface for filtering filings.
-- Submission page with xbrl and fundamentals as well as document list
 - Document page with text, data, tables, nlp, etc
 
 

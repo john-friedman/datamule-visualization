@@ -3,56 +3,150 @@
 
 <head>
     <title>Document - {{ document.path }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        details {
+            margin-bottom: 15px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+            padding: 8px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        summary:hover {
+            background: #e9ecef;
+        }
+
+        .content-display {
+            font-family: 'Courier New', monospace;
+            background: #fafafa;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Document Details</h1>
-    <a href="/submission/{{ submission.accession }}">← Back to Submission</a>
+    <a href="/submission/{{ submission.accession }}" class="back-link">← Back to Submission</a>
 
-    <h2>Basic Information</h2>
-    <p><strong>Path:</strong> {{ document.path }}</p>
-    <p><strong>Extension:</strong> {{ document.extension }}</p>
-    <p><strong>Filing Date:</strong> {{ document.filing_date }}</p>
-    <p><strong>Type:</strong> {{ document.type }}</p>
+    <h1>Document Details</h1>
+
+    <div class="info-section">
+        <p><strong>Path:</strong> {{ document.path }}</p>
+        <p><strong>Extension:</strong> {{ document.extension }}</p>
+        <p><strong>Type:</strong> {{ document.type }}</p>
+        <p><strong>Filing Date:</strong> {{ document.filing_date }}</p>
+    </div>
 
     <details>
-        <summary>Content</summary>
-        <pre>{{ content }}</pre>
+        <summary>Raw File</summary>
+        {% if document.extension in ['.htm', '.html'] %}
+        <iframe srcdoc="{{ content | e }}"></iframe>
+        {% elif document.extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'] %}
+        <img src="data:image/{{ document.extension[1:] }};base64,{{ content | b64encode }}"
+            style="max-width:100%; height:auto;" alt="Document image">
+        {% elif document.extension == '.pdf' %}
+        <embed src="data:application/pdf;base64,{{ content | b64encode }}" type="application/pdf" width="100%"
+            height="500px">
+        {% else %}
+        <div class="content-display">{{ content }}</div>
+        {% endif %}
     </details>
 
     <details>
         <summary>Text</summary>
-        <pre>{{ document.text }}</pre>
+        <div class="content-display">{{ document.text }}</div>
     </details>
 
+
+
     <details>
-        <summary>Data</summary>
-        <pre>{{ document.data | tojson(indent=2) }}</pre>
+        <summary>Parsed Data</summary>
+        <div class="content-display">{{ document.data | tojson(indent=2) }}</div>
     </details>
+
     {% if document.tables %}
     <details>
-        <summary>
-            Tables ({{ document.tables|length }})
-        </summary>
+        <summary>Tables ({{ document.tables|length }})</summary>
         {% for table in document.tables %}
         <details>
             <summary>{{ table.name }} ({{ table.data|length }} rows)</summary>
-            <table border="1">
-                {% if table.data %}
-                <tr>
-                    {% for column in table.data[0].keys() %}
-                    <th>{{ column }}</th>
+            {% if table.data %}
+            <table>
+                <thead>
+                    <tr>
+                        {% for column in table.data[0].keys() %}
+                        <th>{{ column }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table.data %}
+                    <tr>
+                        {% for value in row.values() %}
+                        <td>{{ value or 'N/A' }}</td>
+                        {% endfor %}
+                    </tr>
                     {% endfor %}
-                </tr>
-                {% for row in table.data %}
-                <tr>
-                    {% for value in row.values() %}
-                    <td>{{ value or 'N/A' }}</td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-                {% endif %}
+                </tbody>
             </table>
+            {% endif %}
         </details>
         {% endfor %}
     </details>

@@ -4,6 +4,9 @@ from tkinter import filedialog
 import os
 import math
 from datamule import Portfolio
+import html
+
+
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Required for flash messages
@@ -35,34 +38,101 @@ def process_form_list(value):
         return None
     return [item.strip() for item in value.split(',') if item.strip()]
 
+def create_highlighted_html(document, tag_types):
+    """Convert text to HTML with highlights based on tag positions"""
+    text = str(document.text)
+    tags = document.text.tags
+    
+    # Collect all highlights with positions
+    highlights = []
+    colors = {
+        'persons': '#ffeb3b', 
+        'tickers': '#4caf50', 
+        'cusips': '#2196f3', 
+        'isins': '#ff9800', 
+        'figis': '#9c27b0'
+    }
+    
+    for tag_type in tag_types:
+        if hasattr(tags, tag_type):
+            tag_data = getattr(tags, tag_type)
+            color = colors.get(tag_type, '#cccccc')
+            
+            # Handle different tag formats
+            if tag_type == 'tickers':
+                # Tickers might need special handling - check if it has .all attribute
+                if hasattr(tag_data, 'all'):
+                    # For now, skip tickers since they don't have position data in the same format
+                    continue
+            else:
+                # Standard format: (match, start, end)
+                for match, start, end in tag_data:
+                    highlights.append((start, end, tag_type, color))
+    
+    # Sort by start position
+    highlights.sort()
+    
+    # Build HTML string, handling overlaps by taking first highlight
+    html_parts = []
+    last_pos = 0
+    
+    for start, end, tag_type, color in highlights:
+        if start < last_pos:  # Skip overlapping highlights
+            continue
+            
+        # Add text before highlight
+        html_parts.append(html.escape(text[last_pos:start]))
+        # Add highlighted text
+        html_parts.append(f'<span style="background-color:{color}; padding:1px 2px; border-radius:2px;" title="{tag_type}">{html.escape(text[start:end])}</span>')
+        last_pos = end
+    
+    # Add remaining text
+    html_parts.append(html.escape(text[last_pos:]))
+    
+    return ''.join(html_parts)
+
 @app.route('/submission/<accession>/document/<int:index>')
 def document_view(accession, index):
-   portfolio = get_portfolio()
-   if not portfolio:
-       return redirect('/')
-   
-   submission = next((sub for sub in portfolio if sub.accession == accession), None)
-   if not submission:
-       flash(f"Submission {accession} not found", "error")
-       return redirect('/portfolio')
-   
-   try:
-       if index >= len(submission.metadata.content['documents']):
-           flash(f"Document index {index} out of range", "error")
-           return redirect(f'/submission/{accession}')
-           
-       document = submission._load_document_by_index(index)
+    portfolio = get_portfolio()
+    if not portfolio:
+        return redirect('/')
+    
+    submission = next((sub for sub in portfolio if sub.accession == accession), None)
+    if not submission:
+        flash(f"Submission {accession} not found", "error")
+        return redirect('/portfolio')
+    
+    try:
+        if index >= len(submission.metadata.content['documents']):
+            flash(f"Document index {index} out of range", "error")
+            return redirect(f'/submission/{accession}')
+            
+        document = submission._load_document_by_index(index)
+        
+        content = document.content
+        if isinstance(content, bytes):
+            content = content.decode('utf-8', errors='replace')
+        
+        # Get query params for which tags to highlight
+        highlight_tags = request.args.getlist('highlight')
+        
+        # Process text and tags in Python
+        original_text = str(document.text)
+        highlighted_html = create_highlighted_html(document, highlight_tags) if highlight_tags else original_text
+        
+        return render_template('document.html', 
+                             document=document, 
+                             submission=submission, 
+                             content=content, 
+                             highlighted_text=highlighted_html,
+                             available_tags=['persons', 'cusips', 'isins', 'figis'],
+                             active_highlights=highlight_tags,
+                             index=index)
+        
+    except Exception as e:
+        flash(f"Error loading document: {str(e)}", "error")
+        return redirect(f'/submission/{accession}')
        
-       content = document.content
-       if isinstance(content, bytes):
-           content = content.decode('utf-8', errors='replace')
-       
-       return render_template('document.html', document=document, submission=submission, content=content, index=index)
-       
-   except Exception as e:
-       flash(f"Error loading document: {str(e)}", "error")
-       return redirect(f'/submission/{accession}')
-   
 @app.route('/submission/<accession>', methods=['GET', 'POST'])
 def submission_view(accession):
     portfolio = get_portfolio()
