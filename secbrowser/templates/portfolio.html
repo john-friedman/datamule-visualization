@@ -23,7 +23,7 @@
     <h2>Submissions</h2>
     
 
-    
+    <details>
     <table border="1">
         <tr>
             <th>Accession</th>
@@ -32,12 +32,14 @@
         </tr>
         {% for sub in submissions %}
         <tr>
-            <td>{{ sub.accession }}</td>
+            
+            <td><a href="{{ url_for('submission_view', accession=sub.accession) }}">{{ sub.accession }}</a></td>
             <td>{{ sub.filing_date or 'N/A' }}</td>
             <td>{{ sub.document_count or 0 }}</td>
         </tr>
         {% endfor %}
     </table>
+    </details>
     
     <div>
         {% if page > 1 %}

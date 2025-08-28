@@ -29,6 +29,65 @@ def get_portfolio():
     
     return portfolio_instance
 
+@app.route('/submission/<accession>/document/<int:index>')
+def document_view(accession, index):
+    portfolio = get_portfolio()
+    if not portfolio:
+        return redirect('/')
+    
+    submission = next((sub for sub in portfolio if sub.accession == accession), None)
+    if not submission:
+        flash(f"Submission {accession} not found", "error")
+        return redirect('/portfolio')
+    
+    try:
+        if index >= len(submission.metadata.content['documents']):
+            flash(f"Document index {index} out of range", "error")
+            return redirect(f'/submission/{accession}')
+            
+        document = submission._load_document_by_index(index)
+        
+        content = document.content
+        if isinstance(content, bytes):
+            content = content.decode('utf-8', errors='replace')
+        
+        return f"<pre>{content}</pre>"
+        
+    except Exception as e:
+        flash(f"Error loading document: {str(e)}", "error")
+        return redirect(f'/submission/{accession}')
+
+@app.route('/submission/<accession>', methods=['GET', 'POST'])
+def submission_view(accession):
+    portfolio = get_portfolio()
+    if not portfolio:
+        return redirect('/')
+    
+    submission = next((sub for sub in portfolio if sub.accession == accession), None)
+    if not submission:
+        flash(f"Submission {accession} not found", "error")
+        return redirect('/portfolio')
+    
+    xbrl = None
+    fundamentals = None
+    
+    # Handle XBRL processing
+    if request.method == 'POST' and request.form.get('action') == 'xbrl':
+        try:
+            xbrl = submission.xbrl
+            flash("XBRL data loaded successfully", "success")
+        except Exception as e:
+            flash(f"Error loading XBRL data: {str(e)}", "error")
+    
+    # Handle Fundamentals processing
+    if request.method == 'POST' and request.form.get('action') == 'fundamentals':
+        try:
+            fundamentals = submission.fundamentals
+            flash("Fundamentals data loaded successfully", "success")
+        except Exception as e:
+            flash(f"Error loading fundamentals data: {str(e)}", "error")
+    
+    return render_template('submission.html', submission=submission, xbrl=xbrl, fundamentals=fundamentals)
 
 
 

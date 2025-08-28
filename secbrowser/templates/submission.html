@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Submission - {{ submission.accession }}</title>
+</head>
+
+<body>
+    <h1>Submission Details</h1>
+    <a href="/portfolio">← Back to Portfolio</a>
+
+    <h2>Basic Information</h2>
+    <p><strong>Accession:</strong> {{ submission.accession }}</p>
+    <p><strong>Filing Date:</strong> {{ submission.filing_date }}</p>
+    <details>
+        <summary>Metadata Content</summary>
+        <pre>{% for key, value in submission.metadata.content.items() %}{% if key != 'documents' %}{{ key }}: {{ value | pprint }}
+{% endif %}{% endfor %}</pre>
+    </details>
+
+    <details>
+        <summary>Documents</summary>
+        <table border="1">
+            <tr>
+                <th>Sequence</th>
+                <th>Filename</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>SecSGML Bytes</th>
+            </tr>
+            {% for doc in submission.metadata.content['documents'] %}
+            <tr>
+                <td>{{ doc.sequence }}</td>
+                <td><a href="/submission/{{ submission.accession }}/document/{{ loop.index0 }}">{{ doc.filename or (doc.sequence + '.txt') }}</a></td>
+                <td>{{ doc.description }}</td>
+                <td>{{ doc.type }}</td>
+                <td>{{ doc.secsgml_size_bytes }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </details>
+
+    <h3>Actions</h3>
+    <form method="POST">
+        <button name="action" value="xbrl">XBRL</button>
+        <button name="action" value="fundamentals">Fundamentals</button>
+    </form>
+
+    {% if xbrl %}
+    <details open>
+        <summary>XBRL Data</summary>
+        <table border="1">
+            <tr>
+                <th>ID</th>
+                <th>Accession Number</th>
+                <th>Context ID</th>
+                <th>Taxonomy</th>
+                <th>Name</th>
+                <th>Period Start</th>
+                <th>Period End</th>
+                <th>Members</th>
+            </tr>
+            {% for item in xbrl %}
+            <tr>
+                <td>{{ item._attributes.id }}</td>
+                <td>{{ item._context.entity_identifier }}</td>
+                <td>{{ item._context._contextref }}</td>
+                <td>{{ item._attributes.name.split(':')[0] }}</td>
+                <td>{{ item._attributes.name.split(':')[1] if ':' in item._attributes.name else item._attributes.name }}
+                </td>
+                <td>{{ item._context.period_startdate or item._context.period_instant or 'N/A' }}</td>
+                <td>{{ item._context.period_enddate or 'N/A' }}</td>
+                <td>{{ item._context.entity_segment_explicitmember|join(', ') if
+                    item._context.entity_segment_explicitmember else 'N/A' }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </details>
+    {% endif %}
+
+    {% if fundamentals %}
+    <details open>
+        <summary>Fundamentals Data</summary>
+        {% for statement_type, metrics in fundamentals.items() %}
+        <h4>{{ statement_type }}</h4>
+        <table border="1">
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+                <th>Period Start</th>
+                <th>Period End</th>
+            </tr>
+            {% for metric_name, periods in metrics.items() %}
+            {% for period in periods %}
+            <tr>
+                <td>{{ metric_name }}</td>
+                <td>{{ period.value }}</td>
+                <td>{{ period.period_start_date }}</td>
+                <td>{{ period.period_end_date }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </table>
+        {% endfor %}
+    </details>
+    {% endif %}
+
+</body>
+
+</html>
