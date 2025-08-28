@@ -1,19 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SecBrowser</title>
 </head>
+
 <body>
     <div class="container">
         <h1>SecBrowser</h1>
         <p class="subtitle">A simple interface to interact with SEC filings.</p>
-        
+
+        <h2>Existing Portfolio</h2>
         <form method="POST">
-            <button type="submit" name="browse_folder">Set Portfolio Path</button>
+            <button type="submit" name="browse_folder">Load Portfolio</button>
         </form>
-    
+
+        <hr>
+
+        <h2>New Portfolio</h2>
+        <form method="POST" action="/download">
+            <h3>Download Location</h3>
+            <label>Download Directory: <input type="text" name="download_dir" value="{{ download_path or '' }}"
+                    placeholder="C:\Downloads\submissions"></label>
+            <button type="submit" name="browse_download_folder">Browse Directories</button><br><br>
+
+            <label>Portfolio Name: <input type="text" name="folder_name" placeholder="my_submissions"></label><br><br>
+
+            <h3>Basic Filters</h3>
+            <p>You can make lists using commas. Padded (0000320193) and int (320193) both work.</p>
+            <label>CIK: <input type="text" name="cik" placeholder="0000320193,0001652044"></label><br>
+            <p>Must be uppercase, e.g. GOOGL</p>
+            <label>Ticker: <input type="text" name="ticker" placeholder="AAPL,GOOGL"></label><br>
+            <p>Defines the submission type to download, e.g. 10-K, 10-Q</p>
+            <label>Submission Type: <input type="text" name="submission_type" placeholder="10-K,10-Q"></label><br>
+            <label>Filing Start Date: <input type="date" name="filing_start_date"></label><br>
+            <label>Filing End Date: <input type="date" name="filing_end_date"></label><br>
+            <p>Dash (0001104659-23-015159), no-dash (000110465923015159), and int (110465923015159) all work.</p>
+            <label>Accession Numbers: <input type="text" name="accession_numbers"
+                    placeholder="0001104659-23-015159,000110465923015159"></label><br>
+
+            <h3>Options</h3>
+            <p>Defines the document type within a submission to download, e.g. for a 13F-HR, you might only want
+                INFORMATION TABLE.</p>
+            <label>Document Types: <input type="text" name="document_type"
+                    placeholder="10-K,10-Q,INFORMATION TABLE"></label><br>
+            <label>Requests per Second: <input type="number" name="requests_per_second" value="5" min="1"
+                    max="10"></label><br>
+            <label><input type="checkbox" name="skip_existing" checked> Skip Existing Files</label><br><br>
+
+            <details>
+                <summary>Advanced Filters</summary>
+                <p>Note: Exists in datamule, may not work here yet.</p>
+                <label>SIC: <input type="text" name="sic" placeholder="3571,7372"></label><br>
+                <label>State: <input type="text" name="state" placeholder="CA,DE"></label><br>
+                <label>Category: <input type="text" name="category" placeholder="Large accelerated filer"></label><br>
+                <label>Industry: <input type="text" name="industry" placeholder="Computer programming"></label><br>
+                <label>Exchange: <input type="text" name="exchange" placeholder="NASDAQ,NYSE"></label><br>
+                <label>Name: <input type="text" name="name" placeholder="Apple Inc"></label><br>
+                <label>Business City: <input type="text" name="business_city"
+                        placeholder="Cupertino,Mountain View"></label><br>
+                <label>Business State/Country: <input type="text" name="business_stateOrCountry"
+                        placeholder="CA,DE"></label><br>
+                <label>EIN: <input type="text" name="ein" placeholder="942404110"></label><br>
+                <label>Entity Type: <input type="text" name="entityType" placeholder="corporation"></label><br>
+                <label>Fiscal Year End: <input type="text" name="fiscalYearEnd" placeholder="0930,1231"></label><br>
+                <label>Insider Transaction for Issuer Exists: <input type="text"
+                        name="insiderTransactionForIssuerExists" placeholder="true,false"></label><br>
+                <label>Insider Transaction for Owner Exists: <input type="text" name="insiderTransactionForOwnerExists"
+                        placeholder="true,false"></label><br>
+                <label>Mailing City: <input type="text" name="mailing_city"
+                        placeholder="Cupertino,Mountain View"></label><br>
+                <label>Mailing State/Country: <input type="text" name="mailing_stateOrCountry"
+                        placeholder="CA,DE"></label><br>
+                <label>Owner Org: <input type="text" name="ownerOrg" placeholder="Apple Inc"></label><br>
+                <label>Phone: <input type="text" name="phone" placeholder="4089961010"></label><br>
+                <label>SIC Description: <input type="text" name="sicDescription"
+                        placeholder="Electronic computers"></label><br>
+                <label>State of Incorporation Description: <input type="text" name="stateOfIncorporationDescription"
+                        placeholder="CALIFORNIA,DELAWARE"></label><br>
+            </details>
+
+            <button type="submit" name="download_submissions">Download Submissions</button>
+        </form>
     </div>
 </body>
+
 </html>

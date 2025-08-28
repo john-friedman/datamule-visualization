@@ -29,6 +29,12 @@ def get_portfolio():
     
     return portfolio_instance
 
+def process_form_list(value):
+    """Convert comma-separated string to list, handling None/empty"""
+    if not value or not value.strip():
+        return None
+    return [item.strip() for item in value.split(',') if item.strip()]
+
 @app.route('/submission/<accession>/document/<int:index>')
 def document_view(accession, index):
    portfolio = get_portfolio()
@@ -51,7 +57,7 @@ def document_view(accession, index):
        if isinstance(content, bytes):
            content = content.decode('utf-8', errors='replace')
        
-       return render_template('document.html', document=document, submission=submission, content=content)
+       return render_template('document.html', document=document, submission=submission, content=content, index=index)
        
    except Exception as e:
        flash(f"Error loading document: {str(e)}", "error")
@@ -88,8 +94,6 @@ def submission_view(accession):
             flash(f"Error loading fundamentals data: {str(e)}", "error")
     
     return render_template('submission.html', submission=submission, xbrl=xbrl, fundamentals=fundamentals)
-
-
 
 @app.route('/portfolio', methods=['GET', 'POST'])
 def portfolio_view():
@@ -201,6 +205,106 @@ def portfolio_view():
             total_pages=1,
             submission_types=[]
         )
+
+@app.route('/download', methods=['GET', 'POST'])
+def download_submissions():
+    if request.method == 'POST':
+        # Handle download folder browsing
+        if 'browse_download_folder' in request.form:
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            
+            try:
+                folder_path = filedialog.askdirectory(
+                    title="Select Download Folder",
+                    initialdir=os.getcwd()
+                )
+                
+                if folder_path:
+                    flash(f"Selected download folder: {folder_path}", "success")
+                    return render_template('index.html', download_path=folder_path)
+                    
+            except Exception as e:
+                flash(f"Error opening file dialog: {str(e)}", "error")
+            finally:
+                root.destroy()
+        
+        # Handle download submission
+        elif 'download_submissions' in request.form:
+            try:
+                # Get form data
+                download_dir = request.form.get('download_dir')
+                folder_name = request.form.get('folder_name')
+                
+                if not download_dir or not folder_name:
+                    flash("Download directory and portfolio name are required", "error")
+                    return redirect('/')
+                
+                # Create portfolio instance for downloading
+                download_portfolio = Portfolio(os.path.join(download_dir, folder_name))
+                
+                # Process form parameters
+                kwargs = {}
+                
+                # Basic filters
+                kwargs['cik'] = process_form_list(request.form.get('cik'))
+                kwargs['ticker'] = process_form_list(request.form.get('ticker'))
+                kwargs['submission_type'] = process_form_list(request.form.get('submission_type'))
+                kwargs['filing_date'] = request.form.get('filing_start_date') or None
+                kwargs['document_type'] = process_form_list(request.form.get('document_type'))
+                
+                # Handle accession numbers
+                accession_input = request.form.get('accession_numbers')
+                if accession_input:
+                    accessions = [acc.strip() for acc in accession_input.replace('\n', ',').split(',') if acc.strip()]
+                    kwargs['accession_numbers'] = accessions if accessions else None
+                
+                # Options
+                kwargs['requests_per_second'] = int(request.form.get('requests_per_second', 5))
+                kwargs['keep_filtered_metadata'] = 'keep_filtered_metadata' in request.form
+                kwargs['standardize_metadata'] = 'standardize_metadata' in request.form
+                kwargs['skip_existing'] = 'skip_existing' in request.form
+                
+                # Advanced CIK filters
+                kwargs['sic'] = process_form_list(request.form.get('sic'))
+                kwargs['state'] = process_form_list(request.form.get('state'))
+                kwargs['category'] = request.form.get('category') or None
+                kwargs['industry'] = request.form.get('industry') or None
+                kwargs['exchange'] = process_form_list(request.form.get('exchange'))
+                kwargs['name'] = request.form.get('name') or None
+                kwargs['business_city'] = process_form_list(request.form.get('business_city'))
+                kwargs['business_stateOrCountry'] = process_form_list(request.form.get('business_stateOrCountry'))
+                kwargs['ein'] = request.form.get('ein') or None
+                kwargs['entityType'] = request.form.get('entityType') or None
+                kwargs['fiscalYearEnd'] = request.form.get('fiscalYearEnd') or None
+                kwargs['insiderTransactionForIssuerExists'] = request.form.get('insiderTransactionForIssuerExists') or None
+                kwargs['insiderTransactionForOwnerExists'] = request.form.get('insiderTransactionForOwnerExists') or None
+                kwargs['mailing_city'] = process_form_list(request.form.get('mailing_city'))
+                kwargs['mailing_stateOrCountry'] = process_form_list(request.form.get('mailing_stateOrCountry'))
+                kwargs['ownerOrg'] = request.form.get('ownerOrg') or None
+                kwargs['phone'] = request.form.get('phone') or None
+                kwargs['sicDescription'] = request.form.get('sicDescription') or None
+                kwargs['stateOfIncorporationDescription'] = request.form.get('stateOfIncorporationDescription') or None
+                kwargs['tickers'] = process_form_list(request.form.get('tickers'))
+                
+                # Remove None values
+                kwargs = {k: v for k, v in kwargs.items() if v is not None}
+                
+                # Start download
+                flash("Starting download... This may take some time", "info")
+                download_portfolio.download_submissions(**kwargs)
+                flash(f"Download completed successfully to {os.path.join(download_dir, folder_name)}", "success")
+                
+                # Optionally set this as the current portfolio
+                global selected_portfolio_path
+                selected_portfolio_path = os.path.join(download_dir, folder_name)
+                return redirect('/portfolio')
+                
+            except Exception as e:
+                flash(f"Error downloading submissions: {str(e)}", "error")
+    
+    return redirect('/')
 
 @app.route('/', methods=['GET', 'POST'])
 def landing_page():

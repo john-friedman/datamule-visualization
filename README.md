@@ -21,3 +21,4 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 
 ## Improvements to be made to datamule
 - Change how submissions load from list based to hash. O(1).
+- Change how to select type and cik.
