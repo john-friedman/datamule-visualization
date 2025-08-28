@@ -31,7 +31,8 @@
             {% for doc in submission.metadata.content['documents'] %}
             <tr>
                 <td>{{ doc.sequence }}</td>
-                <td><a href="/submission/{{ submission.accession }}/document/{{ loop.index0 }}">{{ doc.filename or (doc.sequence + '.txt') }}</a></td>
+                <td><a href="/submission/{{ submission.accession }}/document/{{ loop.index0 }}">{{ doc.filename or
+                        (doc.sequence + '.txt') }}</a></td>
                 <td>{{ doc.description }}</td>
                 <td>{{ doc.type }}</td>
                 <td>{{ doc.secsgml_size_bytes }}</td>
@@ -46,8 +47,8 @@
         <button name="action" value="fundamentals">Fundamentals</button>
     </form>
 
-    {% if xbrl %}
-    <details open>
+    {% if submission._xbrl %}
+    <details>
         <summary>XBRL Data</summary>
         <table border="1">
             <tr>
@@ -60,7 +61,7 @@
                 <th>Period End</th>
                 <th>Members</th>
             </tr>
-            {% for item in xbrl %}
+            {% for item in submission._xbrl %}
             <tr>
                 <td>{{ item._attributes.id }}</td>
                 <td>{{ item._context.entity_identifier }}</td>
@@ -78,10 +79,10 @@
     </details>
     {% endif %}
 
-    {% if fundamentals %}
-    <details open>
+    {% if submission._fundamentals_cache %}
+    <details>
         <summary>Fundamentals Data</summary>
-        {% for statement_type, metrics in fundamentals.items() %}
+        {% for statement_type, metrics in submission.fundamentals.items() %}
         <h4>{{ statement_type }}</h4>
         <table border="1">
             <tr>

@@ -14,6 +14,8 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 
 ## Features TBD
 - Document page with text, data, tables, nlp, etc
+- Adding CSS
+- Adding custom templates to change style
 
 
 ## Improvements to be made to datamule

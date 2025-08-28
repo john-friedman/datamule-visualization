@@ -15,6 +15,14 @@ app.secret_key = 'your-secret-key-here'  # Required for flash messages
 selected_portfolio_path = None
 portfolio_instance = None
 
+# Store the selected portfolio path and instance
+selected_portfolio_path = None
+portfolio_instance = None
+
+# Store the selected submission accession and instance
+selected_submission_accession = None
+submission_instance = None
+
 def get_portfolio():
     """Get or create portfolio instance"""
     global portfolio_instance, selected_portfolio_path
@@ -31,6 +39,16 @@ def get_portfolio():
             return None
     
     return portfolio_instance
+
+def get_submission(portfolio, accession):
+    """Get or create submission instance"""
+    global submission_instance, selected_submission_accession
+    
+    if submission_instance is None or selected_submission_accession != accession:
+        submission_instance = next((sub for sub in portfolio if sub.accession == accession), None)
+        selected_submission_accession = accession
+    
+    return submission_instance
 
 def process_form_list(value):
     """Convert comma-separated string to list, handling None/empty"""
@@ -97,7 +115,7 @@ def document_view(accession, index):
     if not portfolio:
         return redirect('/')
     
-    submission = next((sub for sub in portfolio if sub.accession == accession), None)
+    submission = get_submission(portfolio, accession)
     if not submission:
         flash(f"Submission {accession} not found", "error")
         return redirect('/portfolio')
@@ -139,31 +157,32 @@ def submission_view(accession):
     if not portfolio:
         return redirect('/')
     
-    submission = next((sub for sub in portfolio if sub.accession == accession), None)
+    submission = get_submission(portfolio, accession)
     if not submission:
         flash(f"Submission {accession} not found", "error")
         return redirect('/portfolio')
     
-    xbrl = None
-    fundamentals = None
+    # Handle POST actions
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'xbrl':
+            try:
+                # This will populate submission._xbrl via the property
+                _ = submission.xbrl
+                flash("XBRL data loaded successfully", "success")
+            except Exception as e:
+                flash(f"Error loading XBRL data: {str(e)}", "error")
+        
+        elif action == 'fundamentals':
+            try:
+                # This will populate submission._fundamentals_cache via the property
+                _ = submission.fundamentals
+                flash("Fundamentals data loaded successfully", "success")
+            except Exception as e:
+                flash(f"Error loading fundamentals data: {str(e)}", "error")
     
-    # Handle XBRL processing
-    if request.method == 'POST' and request.form.get('action') == 'xbrl':
-        try:
-            xbrl = submission.xbrl
-            flash("XBRL data loaded successfully", "success")
-        except Exception as e:
-            flash(f"Error loading XBRL data: {str(e)}", "error")
-    
-    # Handle Fundamentals processing
-    if request.method == 'POST' and request.form.get('action') == 'fundamentals':
-        try:
-            fundamentals = submission.fundamentals
-            flash("Fundamentals data loaded successfully", "success")
-        except Exception as e:
-            flash(f"Error loading fundamentals data: {str(e)}", "error")
-    
-    return render_template('submission.html', submission=submission, xbrl=xbrl, fundamentals=fundamentals)
+    return render_template('submission.html', submission=submission)
 
 @app.route('/portfolio', methods=['GET', 'POST'])
 def portfolio_view():
@@ -195,6 +214,8 @@ def portfolio_view():
                 # Reset global variables
                 selected_portfolio_path = None
                 portfolio_instance = None
+                selected_submission_accession = None
+                submission_instance = None
                 return redirect('/')
         except Exception as e:
             flash(f"Error performing {action}: {str(e)}", "error")
@@ -394,6 +415,9 @@ def landing_page():
             if folder_path:
                 selected_portfolio_path = folder_path
                 flash(f"Selected portfolio: {folder_path}", "success")
+                # Reset submission cache when changing portfolios
+                selected_submission_accession = None
+                submission_instance = None
                 return redirect('/portfolio')
                 
         except Exception as e:
