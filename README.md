@@ -21,6 +21,14 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 ## Architecture
 - Currently features open in new windows. Will likely change to using iframes.
 
+Figured out NLP for tags
+form input -> POST, also color picker here for colors
+radio buttons for dictionaries (with option None)
+button to output similarity scores.
+
+For NLP with data
+-> same thing but with dict
+
 
 ## Improvements to be made to datamule
 - Change how submissions load from list based to hash. O(1).

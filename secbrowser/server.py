@@ -242,7 +242,148 @@ def process_form_list(value):
         return None
     return [item.strip() for item in value.split(',') if item.strip()]
 
-
+@app.route('/process_tags', methods=['POST'])
+def process_tags():
+    global cache
+    document = cache.get('document')
+    
+    if not document:
+        return redirect('/')
+    
+    # Get form data
+    selected_tags = request.form.getlist('tags')
+    selected_similarity = request.form.getlist('similarity')
+    
+    # Get colors for each tag type
+    colors = {}
+    for tag_type in ['tickers', 'persons', 'cusips', 'isins', 'figis']:
+        color_key = f'{tag_type}_color'
+        if color_key in request.form:
+            colors[tag_type] = request.form[color_key]
+    
+    # Set up dictionaries based on form selections
+    from datamule.tags.config import set_dictionaries
+    active_dictionaries = []
+    
+    # Check each dictionary type selection
+    dict_mappings = {
+        'persons_dict': ['ssa_baby_first_names', '8k_2024_persons'],
+        'cusips_dict': ['sc13dg_cusips', '13fhr_information_table_cusips'], 
+        'figis_dict': ['npx_figis'],
+        'isins_dict': ['npx_isins'],
+        'sentiment_dict': ['loughran_mcdonald']
+    }
+    
+    for dict_type, dict_options in dict_mappings.items():
+        selected_dict = request.form.get(dict_type)
+        if selected_dict and selected_dict != 'none' and selected_dict in dict_options:
+            active_dictionaries.append(selected_dict)
+    
+    # Set active dictionaries
+    if active_dictionaries:
+        set_dictionaries(active_dictionaries)
+    else:
+        set_dictionaries([])
+    
+    # Collect all matches with their positions and colors
+    all_matches = []
+    
+    # Process each selected tag type
+    for tag_type in selected_tags:
+        color = colors.get(tag_type, '#000000')  # Default to black if no color
+        
+        if tag_type == 'tickers':
+            # Tickers work differently - need to extract from the ticker object
+            ticker_data = document.text.tags.tickers
+            if ticker_data and hasattr(ticker_data, '_tickers_data') and ticker_data._tickers_data:
+                # Get all ticker matches from the 'all' category
+                ticker_matches = ticker_data._tickers_data.get('all', [])
+                for match_info in ticker_matches:
+                    # Ticker matches should have format (ticker, start, end)
+                    if len(match_info) >= 3:
+                        ticker, start, end = match_info[:3]
+                        all_matches.append({
+                            'match': ticker,
+                            'start': start,
+                            'end': end,
+                            'color': color,
+                            'type': 'tickers'
+                        })
+        
+        elif tag_type == 'persons':
+            persons = document.text.tags.persons
+            for match, start, end in persons:
+                all_matches.append({
+                    'match': match,
+                    'start': start,
+                    'end': end,
+                    'color': color,
+                    'type': 'persons'
+                })
+        
+        elif tag_type == 'cusips':
+            cusips = document.text.tags.cusips
+            for match, start, end in cusips:
+                all_matches.append({
+                    'match': match,
+                    'start': start,
+                    'end': end,
+                    'color': color,
+                    'type': 'cusips'
+                })
+        
+        elif tag_type == 'isins':
+            isins = document.text.tags.isins
+            for match, start, end in isins:
+                all_matches.append({
+                    'match': match,
+                    'start': start,
+                    'end': end,
+                    'color': color,
+                    'type': 'isins'
+                })
+        
+        elif tag_type == 'figis':
+            figis = document.text.tags.figis
+            for match, start, end in figis:
+                all_matches.append({
+                    'match': match,
+                    'start': start,
+                    'end': end,
+                    'color': color,
+                    'type': 'figis'
+                })
+    
+    # Sort matches by start position (descending) to avoid position shifts when highlighting
+    all_matches.sort(key=lambda x: x['start'], reverse=True)
+    
+    # Apply highlighting to the text
+    highlighted_text = str(document.text)
+    
+    for match_info in all_matches:
+        start = match_info['start']
+        end = match_info['end']
+        color = match_info['color']
+        match_type = match_info['type']
+        
+        # Create highlighted span
+        original_text = highlighted_text[start:end]
+        highlighted_span = f'<span style="background-color: {color}; color: white; padding: 2px; border-radius: 3px;" title="{match_type}: {original_text}">{original_text}</span>'
+        
+        # Replace the text
+        highlighted_text = highlighted_text[:start] + highlighted_span + highlighted_text[end:]
+    
+    # Convert newlines to HTML breaks for display
+    highlighted_text = highlighted_text.replace('\n', '<br>')
+    
+    return render_template('text.html', 
+                         document=document,
+                         highlighted_text=highlighted_text,
+                         matches_found=len(all_matches),
+                         selected_tags=selected_tags,
+                         selected_similarity=selected_similarity,
+                         colors=colors,
+                         form_data=request.form)
 @app.route('/document/<index>')
 def document_view(index):
     global cache
