@@ -31,7 +31,7 @@
             {% for doc in submission.metadata.content['documents'] %}
             <tr>
                 <td>{{ doc.sequence }}</td>
-                <td><a href="/submission/{{ submission.accession }}/document/{{ loop.index0 }}">{{ doc.filename or
+                <td><a href="/document/{{ loop.index0 }}">{{ doc.filename or
                         (doc.sequence + '.txt') }}</a></td>
                 <td>{{ doc.description }}</td>
                 <td>{{ doc.type }}</td>
@@ -41,70 +41,24 @@
         </table>
     </details>
 
-    <h3>Actions</h3>
-    <form method="POST">
-        <button name="action" value="xbrl">XBRL</button>
-        <button name="action" value="fundamentals">Fundamentals</button>
-    </form>
 
-    {% if submission._xbrl %}
-    <details>
-        <summary>XBRL Data</summary>
-        <table border="1">
-            <tr>
-                <th>ID</th>
-                <th>Accession Number</th>
-                <th>Context ID</th>
-                <th>Taxonomy</th>
-                <th>Name</th>
-                <th>Period Start</th>
-                <th>Period End</th>
-                <th>Members</th>
-            </tr>
-            {% for item in submission._xbrl %}
-            <tr>
-                <td>{{ item._attributes.id }}</td>
-                <td>{{ item._context.entity_identifier }}</td>
-                <td>{{ item._context._contextref }}</td>
-                <td>{{ item._attributes.name.split(':')[0] }}</td>
-                <td>{{ item._attributes.name.split(':')[1] if ':' in item._attributes.name else item._attributes.name }}
-                </td>
-                <td>{{ item._context.period_startdate or item._context.period_instant or 'N/A' }}</td>
-                <td>{{ item._context.period_enddate or 'N/A' }}</td>
-                <td>{{ item._context.entity_segment_explicitmember|join(', ') if
-                    item._context.entity_segment_explicitmember else 'N/A' }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </details>
+    {% set ns = namespace(has_xbrl=false) %}
+    {% for doc in submission.metadata.content['documents'] %}
+    {% if doc['type'] in ['EX-100.INS', 'EX-101.INS'] or doc['filename'].endswith('_htm.xml') %}
+    {% set ns.has_xbrl = true %}
     {% endif %}
+    {% endfor %}
 
-    {% if submission._fundamentals_cache %}
+    {% if ns.has_xbrl %}
     <details>
-        <summary>Fundamentals Data</summary>
-        {% for statement_type, metrics in submission.fundamentals.items() %}
-        <h4>{{ statement_type }}</h4>
-        <table border="1">
-            <tr>
-                <th>Metric</th>
-                <th>Value</th>
-                <th>Period Start</th>
-                <th>Period End</th>
-            </tr>
-            {% for metric_name, periods in metrics.items() %}
-            {% for period in periods %}
-            <tr>
-                <td>{{ metric_name }}</td>
-                <td>{{ period.value }}</td>
-                <td>{{ period.period_start_date }}</td>
-                <td>{{ period.period_end_date }}</td>
-            </tr>
-            {% endfor %}
-            {% endfor %}
-        </table>
-        {% endfor %}
+        <summary>Actions</summary>
+        <div>
+            <button onclick="window.open('/xbrl', '_blank')">XBRL</button>
+            <button onclick="window.open('/fundamentals', '_blank')">Fundamentals</button>
+        </div>
     </details>
-    {% endif %}
+    {% endif %} 
+
 
 </body>
 

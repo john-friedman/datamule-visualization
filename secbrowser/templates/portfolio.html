@@ -1,57 +1,51 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Portfolio - {{ portfolio_path }}</title>
+    <title>Portfolio</title>
 </head>
+
 <body>
     <h1>Portfolio Management</h1>
     <a href="/">← Back</a>
-    
+
     <h2>Portfolio Info</h2>
-    <p><strong>Path:</strong> {{ portfolio_path }}</p>
-    <p><strong>Total Submissions:</strong> {{ total_submissions }}</p>
-    <p><strong>Status:</strong> {{ 'Loaded' if submissions_loaded else 'Loading...' }}</p>
-    
+    <p><strong>Path:</strong> {{ portfolio.path }}</p>
+    <p><strong>Total Submissions:</strong> {{ portfolio.submissions|length if portfolio.submissions_loaded else
+        'Loading...' }}</p>
+    <p><strong>Status:</strong> {{ 'Loaded' if portfolio.submissions_loaded else 'Loading...' }}</p>
+
     <h2>Actions</h2>
     <form method="POST" style="display: inline;">
         <button name="action" value="compress" disabled>Compress</button>
         <button name="action" value="decompress" disabled>Decompress</button>
         <button name="action" value="delete" onclick="return confirm('Delete portfolio?')" disabled>Delete</button>
     </form>
-    
-    {% if submissions %}
-    <h2>Submissions</h2>
-    
 
+    {% if portfolio.submissions_loaded %}
+    <h2>Submissions</h2>
     <details open>
-    <table border="1">
-        <tr>
-            <th>Accession</th>
-            <th>Filing Date</th>
-            <th>Documents</th>
-        </tr>
-        {% for sub in submissions %}
-        <tr>
-            
-            <td><a href="{{ url_for('submission_view', accession=sub.accession) }}">{{ sub.accession }}</a></td>
-            <td>{{ sub.filing_date or 'N/A' }}</td>
-            <td>{{ sub.document_count or 0 }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+        <table border="1">
+            <tr>
+                <th>Accession</th>
+                <th>Submission Type</th>
+                <th>Filing Date</th>
+                <th>Documents</th>
+            </tr>
+            {% for sub in portfolio.submissions %}
+            <tr>
+
+                <td><a href="{{ url_for('submission_view', accession=sub.accession) }}">{{ sub.accession }}</a></td>
+                <td>{{ sub.metadata.content['documents'][0].type if sub.metadata.content['documents'] else 'N/A' }}</td>
+                <td>{{ sub.filing_date or 'N/A' }}</td>
+                <td>{{ sub.metadata.content['documents']|length }}</td>
+            </tr>
+            {% endfor %}
+        </table>
     </details>
-    
-    <div>
-        {% if page > 1 %}
-        <a href="?page={{ page - 1 }}&search={{ search }}&type_filter={{ type_filter }}&sort={{ sort_by }}&page_size={{ page_size }}">← Prev</a>
-        {% endif %}
-        
-        Page {{ page }} of {{ total_pages }}
-        
-        {% if page < total_pages %}
-        <a href="?page={{ page + 1 }}&search={{ search }}&type_filter={{ type_filter }}&sort={{ sort_by }}&page_size={{ page_size }}">Next →</a>
-        {% endif %}
-    </div>
+
+
     {% endif %}
 </body>
+
 </html>

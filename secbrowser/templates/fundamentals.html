@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Fundamentals Data - {{ submission.accession }}</title>
+</head>
+
+<body>
+    <h1>Fundamentals Data</h1>
+    <a href="/submission/{{ submission.accession }}">← Back to Submission</a>
+    
+    <h2>Submission: {{ submission.accession }}</h2>
+    <p><strong>Filing Date:</strong> {{ submission.filing_date }}</p>
+
+    {% if submission._fundamentals_cache %}
+    <details open>
+        <summary>Fundamentals Data</summary>
+        {% for statement_type, metrics in submission.fundamentals.items() %}
+        <h4>{{ statement_type }}</h4>
+        <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background-color: #f2f2f2;">
+                <th>Metric</th>
+                <th>Value</th>
+                <th>Period Start</th>
+                <th>Period End</th>
+            </tr>
+            {% for metric_name, periods in metrics.items() %}
+            {% for period in periods %}
+            <tr>
+                <td>{{ metric_name }}</td>
+                <td>{{ period.value }}</td>
+                <td>{{ period.period_start_date }}</td>
+                <td>{{ period.period_end_date }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </table>
+        {% endfor %}
+    </details>
+    {% else %}
+    <p>No fundamentals data available for this submission.</p>
+    {% endif %}
+
+</body>
+
+</html>

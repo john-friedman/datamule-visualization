@@ -79,6 +79,69 @@
         th {
             background-color: #f2f2f2;
         }
+
+        .actions-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .action-category {
+            margin-bottom: 20px;
+        }
+
+        .action-category summary {
+            background: #e9ecef;
+            margin-bottom: 10px;
+        }
+
+        .action-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .action-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .action-item label {
+            flex-grow: 1;
+            margin-right: 10px;
+            font-weight: normal;
+        }
+
+        .action-item input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .submit-actions {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .submit-actions button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .submit-actions button:hover {
+            background: #0056b3;
+        }
     </style>
 </head>
 
@@ -93,6 +156,101 @@
         <p><strong>Type:</strong> {{ document.type }}</p>
         <p><strong>Filing Date:</strong> {{ document.filing_date }}</p>
     </div>
+
+    <details>
+        <summary>Actions</summary>
+        <div class="actions-form">
+            <form method="POST">
+                <div class="action-category">
+                    <details>
+                        <summary>Tags</summary>
+                        <div class="action-item">
+                            <input type="checkbox" id="persons" name="nlp_entities" value="persons">
+                            <label for="persons">Persons</label>
+                            <input type="color" name="persons_color" value="#ff6b6b">
+                        </div>
+                        <div class="action-item">
+                            <input type="checkbox" id="cusips" name="nlp_entities" value="cusips">
+                            <label for="cusips">CUSIPs</label>
+                            <input type="color" name="cusips_color" value="#4ecdc4">
+                        </div>
+                        <div class="action-item">
+                            <input type="checkbox" id="figis" name="nlp_entities" value="figis">
+                            <label for="figis">FIGIs</label>
+                            <input type="color" name="figis_color" value="#45b7d1">
+                        </div>
+                        <div class="action-item">
+                            <input type="checkbox" id="isins" name="nlp_entities" value="isins">
+                            <label for="isins">ISINs</label>
+                            <input type="color" name="isins_color" value="#f9ca24">
+                        </div>
+                    </details>
+                </div>
+
+                <div class="action-category">
+                    <details>
+                        <summary>Sentiment Similarity</summary>
+                        <div class="action-item">
+                            <input type="radio" id="loughran_mcdonald" name="sentiment_method"
+                                value="loughran_mcdonald">
+                            <label for="loughran_mcdonald">Loughran McDonald</label>
+                        </div>
+                    </details>
+                </div>
+
+                <div class="action-category">
+                    <details>
+                        <summary>Dictionaries</summary>
+                        <div style="padding: 10px;">
+                            <h4 style="margin: 10px 0 5px 0; color: #495057;">Persons</h4>
+                            <div class="action-item">
+                                <input type="radio" id="ssa_baby_names" name="persons_dict" value="ssa_baby_names">
+                                <label for="ssa_baby_names">ssa_baby_names</label>
+                                <small style="color: #6c757d;">(Uses all baby first names since 1880, where there are
+                                    more
+                                    than 5 names per year.)</small>
+                            </div>
+                            <div class="action-item">
+                                <input type="radio" id="8k_2024_persons" name="persons_dict" value="8k_2024_persons">
+                                <label for="8k_2024_persons">8k_2024_persons</label>
+                                <small style="color: #6c757d;">(Uses multistage spacy, human parser pipeline to extract
+                                    names from all documents within 2024 8-K filings)</small>
+                            </div>
+
+                            <h4 style="margin: 15px 0 5px 0; color: #495057;">CUSIP</h4>
+                            <div class="action-item">
+                                <input type="radio" id="sc13dg_cusips" name="cusip_dict" value="sc13dg_cusips">
+                                <label for="sc13dg_cusips">sc13dg_cusips</label>
+                                <small style="color: #6c757d;">(Uses SC 13D/G, somewhat incomplete)</small>
+                            </div>
+                            <div class="action-item">
+                                <input type="radio" id="13fhr_cusips" name="cusip_dict" value="13fhr_cusips">
+                                <label for="13fhr_cusips">13fhr_information_table_cusips.txt</label>
+                                <small style="color: #6c757d;">(Uses 13F-HR INFORMATION TABLE, should be better)</small>
+                            </div>
+
+                            <h4 style="margin: 15px 0 5px 0; color: #495057;">ISIN</h4>
+                            <div class="action-item">
+                                <input type="radio" id="npx_isins" name="isin_dict" value="npx_isins">
+                                <label for="npx_isins">npx_isins</label>
+                                <small style="color: #6c757d;">(Uses isins detected in N-PX filings, very
+                                    incomplete)</small>
+                            </div>
+
+                            <h4 style="margin: 15px 0 5px 0; color: #495057;">FIGI</h4>
+                            <div class="action-item">
+                                <input type="radio" id="npx_figis" name="figi_dict" value="npx_figis">
+                                <label for="npx_figis">npx_figis</label>
+                                <small style="color: #6c757d;">(Uses figis detected in N-PX filings, very
+                                    incomplete)</small>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </form>
+        </div>
+    </details>
+
 
     <details>
         <summary>Raw File</summary>
@@ -113,8 +271,6 @@
         <summary>Text</summary>
         <div class="content-display">{{ document.text }}</div>
     </details>
-
-
 
     <details>
         <summary>Parsed Data</summary>

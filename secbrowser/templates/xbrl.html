@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>XBRL Data - {{ submission.accession }}</title>
+</head>
+
+<body>
+    <h1>XBRL Data</h1>
+    <a href="/submission/{{ submission.accession }}">← Back to Submission</a>
+    
+    <h2>Submission: {{ submission.accession }}</h2>
+    <p><strong>Filing Date:</strong> {{ submission.filing_date }}</p>
+
+    {% if submission._xbrl %}
+    <details open>
+        <summary>XBRL Data ({{ submission._xbrl|length }} items)</summary>
+        <table border="1" style="width: 100%; border-collapse: collapse;">
+            <tr style="background-color: #f2f2f2;">
+                <th>Name</th>
+                <th>Value</th>
+                <th>Unit</th>
+                <th>Period Start</th>
+                <th>Period End</th>
+                <th>Taxonomy</th>
+                <th>Context ID</th>
+                <th>Accession Number</th>
+                <th>Decimals</th>
+            </tr>
+            {% for item in submission._xbrl %}
+            <tr>
+                <td>{{ item._attributes.name.split(':')[1] if ':' in item._attributes.name else item._attributes.name }}</td>
+                <td style="text-align: right;">{{ item._val }}</td>
+                <td>{{ item._attributes.unitRef }}</td>
+                <td>{{ item._context.period_startdate or 'N/A' }}</td>
+                <td>{{ item._context.period_enddate or 'N/A' }}</td>
+                <td>{{ item._attributes.name.split(':')[0] }}</td>
+                <td style="font-size: 0.8em; color: #666;">{{ item._context._contextref }}</td>
+                <td>{{ item._context.entity_identifier }}</td>
+                <td style="text-align: center;">{{ item._attributes.decimals }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </details>
+    {% else %}
+    <p>No XBRL data available for this submission.</p>
+    {% endif %}
+
+</body>
+
+</html>
