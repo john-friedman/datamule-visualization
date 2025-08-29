@@ -279,6 +279,11 @@ def process_tags():
         if selected_dict and selected_dict != 'none' and selected_dict in dict_options:
             active_dictionaries.append(selected_dict)
     
+    # Also add loughran_mcdonald if similarity is selected
+    if 'loughran_mcdonald' in selected_similarity:
+        if 'loughran_mcdonald' not in active_dictionaries:
+            active_dictionaries.append('loughran_mcdonald')
+    
     # Set active dictionaries
     if active_dictionaries:
         set_dictionaries(active_dictionaries)
@@ -290,7 +295,7 @@ def process_tags():
     
     # Process each selected tag type
     for tag_type in selected_tags:
-        color = colors.get(tag_type, '#000000')  # Default to black if no color
+        color = colors.get(tag_type, "#C316C6") 
         
         if tag_type == 'tickers':
             # Tickers work differently - need to extract from the ticker object
@@ -375,15 +380,24 @@ def process_tags():
     
     # Convert newlines to HTML breaks for display
     highlighted_text = highlighted_text.replace('\n', '<br>')
+
+    similarity_results = None
+    if 'loughran_mcdonald' in selected_similarity:
+        similarity_results = document.text.similarity.loughran_mcdonald
+        print(f"sim: {similarity_results}")
     
     return render_template('text.html', 
-                         document=document,
-                         highlighted_text=highlighted_text,
-                         matches_found=len(all_matches),
-                         selected_tags=selected_tags,
-                         selected_similarity=selected_similarity,
-                         colors=colors,
-                         form_data=request.form)
+                     document=document,
+                     highlighted_text=highlighted_text,
+                     matches_found=len(all_matches),
+                     selected_tags=selected_tags,
+                     selected_similarity=selected_similarity,
+                     colors=colors,
+                     form_data=request.form,
+                     similarity_results=similarity_results)
+
+
+
 @app.route('/document/<index>')
 def document_view(index):
     global cache

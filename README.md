@@ -35,3 +35,4 @@ For NLP with data
 - Change how to select type and cik.
 - make document.text tables nicer
 - make tables failsoft.
+- fix how loughran mcdonald dictionary is accessed. right now it needs the dict, but doesnt always use it.

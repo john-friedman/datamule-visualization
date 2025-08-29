@@ -46,7 +46,7 @@
       </fieldset>
 
       <fieldset>
-        <legend>Similarity:</legend>
+        <legend>Sentiment Similarity:</legend>
 
         <input type="checkbox" id="loughran_mcdonald" name="similarity" value="loughran_mcdonald" {%
           if 'loughran_mcdonald' in (request.form.getlist('similarity') if form_data else []) %}checked{% endif %}>
@@ -119,28 +119,21 @@
         <br>
       </fieldset>
 
-      <fieldset>
-        <legend>Dictionaries - Sentiment:</legend>
-
-        <input type="radio" id="sentiment_none" name="sentiment_dict" value="none" {% if not form_data or
-          form_data.get('sentiment_dict')=='none' %}checked{% endif %}>
-        <label for="sentiment_none">None</label>
-        <br>
-
-        <input type="radio" id="sentiment_lm" name="sentiment_dict" value="loughran_mcdonald" {% if form_data and
-          form_data.get('sentiment_dict')=='loughran_mcdonald' %}checked{% endif %}>
-        <label for="sentiment_lm">Loughran McDonald</label>
-        <br>
-      </fieldset>
-
       <button type="submit">Process Tags</button>
     </form>
   </section>
 
+  {% if similarity_results %}
+  <h3>Sentiment Similarity</h3>
+  <pre>{{ similarity_results | pprint }}</pre>
+  {% endif %}
+
   {% if highlighted_text %}
+  <h3>Text with Tags</h3>
   <div>{{ highlighted_text|safe }}</div>
   <p><strong>Tags found:</strong> {{ matches_found }}</p>
   {% else %}
+  <h3>Text</h3>
   <div>{{ document.text|replace('\n', '<br>')|safe }}</div>
   {% endif %}
 
