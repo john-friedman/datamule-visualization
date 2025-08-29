@@ -4,7 +4,7 @@ setup(
     name="secbrowser",
     version="0.0.1",
     packages=find_packages(),
-    install_requires=["flask"
+    install_requires=["flask","datamule"
     ],
     include_package_data=True,
     package_data={

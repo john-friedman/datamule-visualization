@@ -13,37 +13,17 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 - You like visualizations
 
 ## Features TBD
-- Document page with text, data, tables, nlp, etc
+- Document page with nlp
 - Adding CSS
 - Adding custom templates to change style
-- add maximize window to document tabs
 - chatbot integration
 
-
-## Arch
-- we will use iframes and new windows then switch
-
-for text - probably setup within iframe if possible, 
-little div or something with checkboxes as well as use dictionary (should label here reminder to label in code)
-also add text sim
-
-we can copy this for data
-then it's just a tweak for highlight and sim
-think through generalization
-oh wait. dont do this in the iframe for now
-just have stuff at top
-
-Tags:
-persons, tickers, etc with highlight default color and color picker
-
-Similarity:
-with choose type -> that creates colors for types since we dont predefine types
-
-OKAY SO
-we will just go with new windows for now
-later -> port within iframe
+## Architecture
+- Currently features open in new windows. Will likely change to using iframes.
 
 
 ## Improvements to be made to datamule
 - Change how submissions load from list based to hash. O(1).
 - Change how to select type and cik.
+- make document.text tables nicer
+- make tables failsoft.
