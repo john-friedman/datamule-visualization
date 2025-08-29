@@ -130,8 +130,8 @@
 
   {% if highlighted_text %}
   <h3>Text with Tags</h3>
-  <div>{{ highlighted_text|safe }}</div>
   <p><strong>Tags found:</strong> {{ matches_found }}</p>
+  <div>{{ highlighted_text|safe }}</div>
   {% else %}
   <h3>Text</h3>
   <div>{{ document.text|replace('\n', '<br>')|safe }}</div>

@@ -13,18 +13,14 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 - You like visualizations
 
 ## Features TBD
-- Document page with nlp
+- Document page data with nlp
 - Adding CSS
 - Adding custom templates to change style
 - chatbot integration
+- hide buttons that are not relevant to certain filings.
 
 ## Architecture
 - Currently features open in new windows. Will likely change to using iframes.
-
-Figured out NLP for tags
-form input -> POST, also color picker here for colors
-radio buttons for dictionaries (with option None)
-button to output similarity scores.
 
 For NLP with data
 -> same thing but with dict
@@ -35,4 +31,4 @@ For NLP with data
 - Change how to select type and cik.
 - make document.text tables nicer
 - make tables failsoft.
-- fix how loughran mcdonald dictionary is accessed. right now it needs the dict, but doesnt always use it.
+- fix how sentiment dictionaries are accessed. right now it needs the dict, but doesnt specify it when called.

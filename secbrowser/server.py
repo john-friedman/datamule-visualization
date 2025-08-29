@@ -6,7 +6,26 @@ from datamule import Portfolio
 
 
 # move to utils
-def process_document(doc_dict, html, level):
+def apply_highlights_to_fragment(text, highlights, fragment_id):
+    """Apply highlighting to a specific text fragment"""
+    fragment_matches = [h for h in highlights if h.get('fragment_id') == fragment_id]
+    if not fragment_matches:
+        return text
+    
+    fragment_matches.sort(key=lambda x: x['start'], reverse=True)
+    
+    highlighted_text = text
+    for match in fragment_matches:
+        start, end = match['start'], match['end']
+        color = match['color']
+        match_type = match['type']
+        original = highlighted_text[start:end]
+        span = f'<span style="background-color: {color}; color: white; padding: 2px; border-radius: 3px;" title="{match_type}: {original}">{original}</span>'
+        highlighted_text = highlighted_text[:start] + span + highlighted_text[end:]
+    
+    return highlighted_text
+
+def process_document(doc_dict, html, level, highlights=None, parent_id=''):
     """Process document elements recursively"""
     # Sort keys to ensure numerical order for items like "1", "2", etc.
     try:
@@ -17,14 +36,19 @@ def process_document(doc_dict, html, level):
     
     for key in sorted_keys:
         value = doc_dict[key]
+        current_id = f"{parent_id}_{key}" if parent_id else key
         
         if isinstance(value, dict):
             section_title = value.get("title", "")
             
-            # Output the section title
+            # Output the section title with highlighting if applicable
             if section_title:
                 heading_level = min(level, 6)  # Limit to h6
-                html.append(f'<h{heading_level}>{section_title}</h{heading_level}>')
+                if highlights:
+                    highlighted_title = apply_highlights_to_fragment(section_title, highlights, 'title')
+                    html.append(f'<h{heading_level}>{highlighted_title}</h{heading_level}>')
+                else:
+                    html.append(f'<h{heading_level}>{section_title}</h{heading_level}>')
             
             # Process the section content
             html.append('<div class="section">')
@@ -32,24 +56,31 @@ def process_document(doc_dict, html, level):
             # Handle direct content fields
             for attr_key, attr_value in value.items():
                 if attr_key not in ["title", "class", "contents", "standardized_title"]:
-                    process_content(attr_key, attr_value, html)
+                    process_content(attr_key, attr_value, html, highlights, attr_key)
             
             # Process contents dictionary if it exists
             if "contents" in value and value["contents"]:
-                process_document(value["contents"], html, level + 1)
+                process_document(value["contents"], html, level + 1, highlights, current_id)
                 
             html.append('</div>')
         else:
             # Direct content
-            process_content(key, value, html)
+            process_content(key, value, html, highlights, key)
 
-def process_content(content_type, content, html):
+def process_content(content_type, content, html, highlights=None, fragment_id=None):
     """Process specific content types"""
     if content_type == "text":
-        # Preserve bullet points and other formatting
-        html.append(f'<p>{content}</p>')
+        if highlights and fragment_id:
+            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id)
+            html.append(f'<div>{highlighted_content}</div>')
+        else:
+            html.append(f'<div>{content}</div>')
     elif content_type == "textsmall":
-        html.append(f'<p class="textsmall">{content}</p>')
+        if highlights and fragment_id:
+            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id)
+            html.append(f'<div class="textsmall">{highlighted_content}</div>')
+        else:
+            html.append(f'<div class="textsmall">{content}</div>')
     elif content_type == "image":
         process_image(content, html)
     elif content_type == "table":
@@ -115,7 +146,7 @@ def process_table(table_data, html):
     
     html.append('</table>')
 
-def visualize_data_as_html(data):
+def visualize_data_as_html(data, highlights=None):
     data_dict = data
     html = []
     
@@ -183,7 +214,7 @@ def visualize_data_as_html(data):
                 margin-bottom: 0.5em;
                 color: #333;
             }
-            p {
+            div {
                 margin: 0.5em 0;
             }
             .document-image {
@@ -221,7 +252,7 @@ def visualize_data_as_html(data):
     # Process the document structure
     if "document" in data_dict:
         html.append('<div class="document">')
-        process_document(data_dict["document"], html, 1)
+        process_document(data_dict["document"], html, 1, highlights)
         html.append('</div>')
     
     # Add HTML closing tags
@@ -230,8 +261,6 @@ def visualize_data_as_html(data):
     </html>
     """)
     return html
-
-
 app = Flask(__name__)
 
 cache = {}
@@ -430,17 +459,152 @@ def content_view():
         }
     )
 
-@app.route('/document/visualize')
+@app.route('/document/visualize', methods=['GET', 'POST'])
 def visualize_view():
     global cache
     document = cache.get('document')
-    html = visualize_data_as_html(document.data)
     
-    return Response(
-        html,
-        mimetype='text/html',
-        headers={'Content-Disposition': 'inline'}
-    )
+    if not document:
+        return redirect('/')
+    
+    if request.method == 'POST':
+        # Get form data
+        selected_tags = request.form.getlist('tags')
+        selected_similarity = request.form.getlist('similarity')
+        
+        # Get colors for each tag type
+        colors = {}
+        for tag_type in ['tickers', 'persons', 'cusips', 'isins', 'figis']:
+            color_key = f'{tag_type}_color'
+            if color_key in request.form:
+                colors[tag_type] = request.form[color_key]
+        
+        # Set up dictionaries based on form selections
+        from datamule.tags.config import set_dictionaries
+        active_dictionaries = []
+        
+        # Check each dictionary type selection
+        dict_mappings = {
+            'persons_dict': ['ssa_baby_first_names', '8k_2024_persons'],
+            'cusips_dict': ['sc13dg_cusips', '13fhr_information_table_cusips'], 
+            'figis_dict': ['npx_figis'],
+            'isins_dict': ['npx_isins'],
+            'sentiment_dict': ['loughran_mcdonald']
+        }
+        
+        for dict_type, dict_options in dict_mappings.items():
+            selected_dict = request.form.get(dict_type)
+            if selected_dict and selected_dict != 'none' and selected_dict in dict_options:
+                active_dictionaries.append(selected_dict)
+        
+        # Also add loughran_mcdonald if similarity is selected
+        if 'loughran_mcdonald' in selected_similarity:
+            if 'loughran_mcdonald' not in active_dictionaries:
+                active_dictionaries.append('loughran_mcdonald')
+        
+        # Set active dictionaries
+        if active_dictionaries:
+            set_dictionaries(active_dictionaries)
+        else:
+            set_dictionaries([])
+        
+        # Collect all matches with their positions and colors from document.data
+        all_matches = []
+        
+        # Process each selected tag type using document.data.tags
+        for tag_type in selected_tags:
+            color = colors.get(tag_type, '#000000')
+            
+            if tag_type == 'tickers':
+                # Tickers work differently - need to extract from the ticker object
+                ticker_data = document.data.tags.tickers
+                if ticker_data and hasattr(ticker_data, '_tickers_data') and ticker_data._tickers_data:
+                    ticker_matches = ticker_data._tickers_data.get('all', [])
+                    for match_info in ticker_matches:
+                        if len(match_info) >= 3:
+                            ticker, start, end = match_info[:3]
+                            all_matches.append({
+                                'match': ticker,
+                                'fragment_id': None,
+                                'start': start,
+                                'end': end,
+                                'color': color,
+                                'type': 'tickers'
+                            })
+            
+            elif tag_type == 'persons':
+                persons = document.data.tags.persons
+                for match, fragment_id, start, end in persons:
+                    all_matches.append({
+                        'match': match,
+                        'fragment_id': fragment_id,
+                        'start': start,
+                        'end': end,
+                        'color': color,
+                        'type': 'persons'
+                    })
+            
+            elif tag_type == 'cusips':
+                cusips = document.data.tags.cusips
+                for match, fragment_id, start, end in cusips:
+                    all_matches.append({
+                        'match': match,
+                        'fragment_id': fragment_id,
+                        'start': start,
+                        'end': end,
+                        'color': color,
+                        'type': 'cusips'
+                    })
+            
+            elif tag_type == 'isins':
+                isins = document.data.tags.isins
+                for match, fragment_id, start, end in isins:
+                    all_matches.append({
+                        'match': match,
+                        'fragment_id': fragment_id,
+                        'start': start,
+                        'end': end,
+                        'color': color,
+                        'type': 'isins'
+                    })
+            
+            elif tag_type == 'figis':
+                figis = document.data.tags.figis
+                for match, fragment_id, start, end in figis:
+                    all_matches.append({
+                        'match': match,
+                        'fragment_id': fragment_id,
+                        'start': start,
+                        'end': end,
+                        'color': color,
+                        'type': 'figis'
+                    })
+        
+        # Process similarity results
+        similarity_results = None
+        if 'loughran_mcdonald' in selected_similarity:
+            similarity_results = document.data.similarity.loughran_mcdonald
+        
+
+        # Generate visualization HTML with highlighting
+        data_visualization = '\n'.join(visualize_data_as_html(document.data, all_matches))
+        
+        return render_template('visualize.html', 
+                             document=document,
+                             data_visualization=data_visualization,
+                             matches_found=len(all_matches),
+                             selected_tags=selected_tags,
+                             selected_similarity=selected_similarity,
+                             colors=colors,
+                             form_data=request.form,
+                             similarity_results=similarity_results)
+    
+    else:
+        # Default GET request - show standard visualization
+        html = visualize_data_as_html(document.data)
+        return render_template('visualize.html', 
+                             document=document,
+                             data_visualization='\n'.join(html))
 
 @app.route('/document/data')
 def data_view():

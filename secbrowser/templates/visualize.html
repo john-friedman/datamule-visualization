@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Data Visualization</title>
+</head>
+
+<body>
+    <section>
+        <form method="POST" action="/document/visualize">
+            <fieldset>
+                <legend>Tags:</legend>
+                
+                <input type="checkbox" id="tickers" name="tags" value="tickers" {% if selected_tags and 'tickers' in selected_tags %}checked{% endif %}>
+                <label for="tickers">Tickers</label>
+                <input type="color" id="tickers_color" name="tickers_color" value="{% if colors and 'tickers' in colors %}{{ colors['tickers'] }}{% else %}#ff0000{% endif %}">
+                <br>
+                
+                <input type="checkbox" id="persons" name="tags" value="persons" {% if selected_tags and 'persons' in selected_tags %}checked{% endif %}>
+                <label for="persons">Persons</label>
+                <input type="color" id="persons_color" name="persons_color" value="{% if colors and 'persons' in colors %}{{ colors['persons'] }}{% else %}#00ff00{% endif %}">
+                <br>
+                
+                <input type="checkbox" id="cusips" name="tags" value="cusips" {% if selected_tags and 'cusips' in selected_tags %}checked{% endif %}>
+                <label for="cusips">CUSIPs</label>
+                <input type="color" id="cusips_color" name="cusips_color" value="{% if colors and 'cusips' in colors %}{{ colors['cusips'] }}{% else %}#0000ff{% endif %}">
+                <br>
+                
+                <input type="checkbox" id="isins" name="tags" value="isins" {% if selected_tags and 'isins' in selected_tags %}checked{% endif %}>
+                <label for="isins">ISINs</label>
+                <input type="color" id="isins_color" name="isins_color" value="{% if colors and 'isins' in colors %}{{ colors['isins'] }}{% else %}#ffff00{% endif %}">
+                <br>
+                
+                <input type="checkbox" id="figis" name="tags" value="figis" {% if selected_tags and 'figis' in selected_tags %}checked{% endif %}>
+                <label for="figis">FIGIs</label>
+                <input type="color" id="figis_color" name="figis_color" value="{% if colors and 'figis' in colors %}{{ colors['figis'] }}{% else %}#ff00ff{% endif %}">
+                <br>
+            </fieldset>
+
+            <fieldset>
+                <legend>Similarity:</legend>
+                
+                <input type="checkbox" id="loughran_mcdonald" name="similarity" value="loughran_mcdonald" {% if selected_similarity and 'loughran_mcdonald' in selected_similarity %}checked{% endif %}>
+                <label for="loughran_mcdonald">Loughran McDonald</label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Dictionaries - Persons:</legend>
+                
+                <input type="radio" id="persons_none" name="persons_dict" value="none" {% if not form_data or form_data.get('persons_dict') == 'none' %}checked{% endif %}>
+                <label for="persons_none">None</label>
+                <br>
+                
+                <input type="radio" id="persons_ssa" name="persons_dict" value="ssa_baby_first_names" {% if form_data and form_data.get('persons_dict') == 'ssa_baby_first_names' %}checked{% endif %}>
+                <label for="persons_ssa">SSA Baby First Names</label>
+                <br>
+                
+                <input type="radio" id="persons_8k" name="persons_dict" value="8k_2024_persons" {% if form_data and form_data.get('persons_dict') == '8k_2024_persons' %}checked{% endif %}>
+                <label for="persons_8k">8-K 2024 Persons</label>
+                <br>
+            </fieldset>
+
+            <fieldset>
+                <legend>Dictionaries - CUSIPs:</legend>
+                
+                <input type="radio" id="cusips_none" name="cusips_dict" value="none" {% if not form_data or form_data.get('cusips_dict') == 'none' %}checked{% endif %}>
+                <label for="cusips_none">None</label>
+                <br>
+                
+                <input type="radio" id="cusips_sc13dg" name="cusips_dict" value="sc13dg_cusips" {% if form_data and form_data.get('cusips_dict') == 'sc13dg_cusips' %}checked{% endif %}>
+                <label for="cusips_sc13dg">SC 13D/G CUSIPs</label>
+                <br>
+                
+                <input type="radio" id="cusips_13fhr" name="cusips_dict" value="13fhr_information_table_cusips" {% if form_data and form_data.get('cusips_dict') == '13fhr_information_table_cusips' %}checked{% endif %}>
+                <label for="cusips_13fhr">13F-HR Information Table CUSIPs</label>
+                <br>
+            </fieldset>
+
+            <fieldset>
+                <legend>Dictionaries - FIGIs:</legend>
+                
+                <input type="radio" id="figis_none" name="figis_dict" value="none" {% if not form_data or form_data.get('figis_dict') == 'none' %}checked{% endif %}>
+                <label for="figis_none">None</label>
+                <br>
+                
+                <input type="radio" id="figis_npx" name="figis_dict" value="npx_figis" {% if form_data and form_data.get('figis_dict') == 'npx_figis' %}checked{% endif %}>
+                <label for="figis_npx">NPX FIGIs</label>
+                <br>
+            </fieldset>
+
+            <fieldset>
+                <legend>Dictionaries - ISINs:</legend>
+                
+                <input type="radio" id="isins_none" name="isins_dict" value="none" {% if not form_data or form_data.get('isins_dict') == 'none' %}checked{% endif %}>
+                <label for="isins_none">None</label>
+                <br>
+                
+                <input type="radio" id="isins_npx" name="isins_dict" value="npx_isins" {% if form_data and form_data.get('isins_dict') == 'npx_isins' %}checked{% endif %}>
+                <label for="isins_npx">NPX ISINs</label>
+                <br>
+            </fieldset>
+
+            <fieldset>
+                <legend>Dictionaries - Sentiment:</legend>
+                
+                <input type="radio" id="sentiment_none" name="sentiment_dict" value="none" {% if not form_data or form_data.get('sentiment_dict') == 'none' %}checked{% endif %}>
+                <label for="sentiment_none">None</label>
+                <br>
+                
+                <input type="radio" id="sentiment_lm" name="sentiment_dict" value="loughran_mcdonald" {% if form_data and form_data.get('sentiment_dict') == 'loughran_mcdonald' %}checked{% endif %}>
+                <label for="sentiment_lm">Loughran McDonald</label>
+                <br>
+            </fieldset>
+
+            <button type="submit">Process Data Tags</button>
+        </form>
+    </section>
+
+    {% if similarity_results %}
+        <h3>Similarity Analysis Results:</h3>
+        <pre>{{ similarity_results }}</pre>
+    {% endif %}
+
+    {% if data_visualization %}
+        <div>{{ data_visualization|safe }}</div>
+        <p><strong>Tags found:</strong> {{ matches_found }}</p>
+    {% else %}
+        <div>{{ document.data }}</div>
+    {% endif %}
+
+</body>
+
+</html>
