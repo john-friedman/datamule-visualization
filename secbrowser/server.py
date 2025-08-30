@@ -45,7 +45,7 @@ def process_document(doc_dict, html, level, highlights=None, parent_id=''):
             if section_title:
                 heading_level = min(level, 6)  # Limit to h6
                 if highlights:
-                    highlighted_title = apply_highlights_to_fragment(section_title, highlights, 'title')
+                    highlighted_title = apply_highlights_to_fragment(section_title, highlights, key)  # Changed from 'title' to 'key'
                     html.append(f'<h{heading_level}>{highlighted_title}</h{heading_level}>')
                 else:
                     html.append(f'<h{heading_level}>{section_title}</h{heading_level}>')
@@ -56,7 +56,7 @@ def process_document(doc_dict, html, level, highlights=None, parent_id=''):
             # Handle direct content fields
             for attr_key, attr_value in value.items():
                 if attr_key not in ["title", "class", "contents", "standardized_title"]:
-                    process_content(attr_key, attr_value, html, highlights, attr_key)
+                    process_content(attr_key, attr_value, html, highlights, key)  # Already correct - using 'key'
             
             # Process contents dictionary if it exists
             if "contents" in value and value["contents"]:
@@ -66,7 +66,7 @@ def process_document(doc_dict, html, level, highlights=None, parent_id=''):
         else:
             # Direct content
             process_content(key, value, html, highlights, key)
-
+            
 def process_content(content_type, content, html, highlights=None, fragment_id=None):
     """Process specific content types"""
     if content_type == "text":

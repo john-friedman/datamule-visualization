@@ -13,17 +13,12 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 - You like visualizations
 
 ## Features TBD
-- Document page data with nlp
+- add similarity
+- list out tags found (to check for issues with viz)
 - Adding CSS
 - Adding custom templates to change style
 - chatbot integration
 - hide buttons that are not relevant to certain filings.
-
-## Architecture
-- Currently features open in new windows. Will likely change to using iframes.
-
-For NLP with data
--> same thing but with dict
 
 
 ## Improvements to be made to datamule
