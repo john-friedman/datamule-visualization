@@ -332,6 +332,7 @@ def process_form_list(value):
 def process_tags():
     global cache
     document = cache.get('document')
+    document.reset_nlp()
     
     if not document:
         return redirect('/')
@@ -532,6 +533,7 @@ def content_view():
 def visualize_view():
     global cache
     document = cache.get('document')
+    document.reset_nlp()
     
     if not document:
         return redirect('/')
