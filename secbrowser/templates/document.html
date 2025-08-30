@@ -3,12 +3,16 @@
 
 <head>
     <title>Document</title>
+    <link rel="stylesheet" href="/static/css/minimal.css">
 </head>
 
 <body>
     <a href="/submission/{{document.accession}}">← Back to Submission</a>
 
-    <h1>Document Details</h1>
+    <h1>Document</h1>
+    <div class="note">The Document class is how datamule represents files within a SEC filing.</div>
+    <div class="note">"open" opens the file. "content" opens the files content, "text" uses datamule's `.text` attribute to extract text from document and to display, "data" uses `doc2dict` to convert the document if in html or text form into a dictionary, "visualize" creates a visual represenation of the dictionary representation with additional features such as nlp, and tables uses tables to convert and standardize xml into tabular data suitable for spreadsheets or sql databases. </div>
+    <div class="note">Both "text" and "visualize" provide access to datamule's early (read hilariously bad) NLP offerings. For example, persons detection or Loughran McDonald Sentiment Similarity.</div>
     <p><strong>Path:</strong> {{ document.path }}</p>
     <p><strong>Extension:</strong> {{ document.extension }}</p>
     <p><strong>Type:</strong> {{ document.type }}</p>

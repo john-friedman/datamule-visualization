@@ -6,7 +6,22 @@ from datamule import Portfolio
 
 
 # move to utils
-def apply_highlights_to_fragment(text, highlights, fragment_id, sentiment_data=None, sentiment_colors=None):
+def get_default_sentiment_color(sentiment_key):
+    """Get default colors for sentiment keys"""
+    loughran_colors = {
+        'negative': '#ff4444',      # Red
+        'positive': '#44ff44',      # Green  
+        'uncertainty': '#ffaa44',   # Orange
+        'litigious': '#aa44ff',     # Purple
+        'strong_modal': '#4444ff',  # Blue
+        'weak_modal': '#44aaff',    # Light blue
+        'constraining': '#ff44aa'   # Pink
+    }
+    
+    # Return Loughran color if available, otherwise a generic color
+    return loughran_colors.get(sentiment_key, '#888888')
+
+def apply_highlights_to_fragment(text, highlights, fragment_id):
     """Apply highlighting to a specific text fragment"""
     fragment_matches = [h for h in highlights if h.get('fragment_id') == fragment_id]
     if not fragment_matches:
@@ -21,25 +36,10 @@ def apply_highlights_to_fragment(text, highlights, fragment_id, sentiment_data=N
         match_type = match['type']
         original = highlighted_text[start:end]
         
-        # Build border style if sentiment data exists
-        border_style = ""
-        if sentiment_data and sentiment_colors:
-            # Find the highest sentiment score to apply one border
-            max_sentiment = 0
-            max_sentiment_color = None
-            for sentiment_key, sentiment_color in sentiment_colors.items():
-                if sentiment_key in sentiment_data and sentiment_data[sentiment_key] > max_sentiment:
-                    max_sentiment = sentiment_data[sentiment_key]
-                    max_sentiment_color = sentiment_color
-            
-            if max_sentiment_color:
-                border_style = f"; border: 3px solid {max_sentiment_color}"
-        
-        span = f'<span style="background-color: {color}; color: white; padding: 2px; border-radius: 3px{border_style}" title="{match_type}: {original}">{original}</span>'
+        span = f'<span style="background-color: {color}; color: white; padding: 2px; border-radius: 3px;" title="{match_type}: {original}">{original}</span>'
         highlighted_text = highlighted_text[:start] + span + highlighted_text[end:]
     
     return highlighted_text
-
 
 def process_document(doc_dict, html, level, highlights=None, parent_id='', sentiment_fragments=None, sentiment_colors=None):
     """Process document elements recursively"""
@@ -57,16 +57,34 @@ def process_document(doc_dict, html, level, highlights=None, parent_id='', senti
         if isinstance(value, dict):
             section_title = value.get("title", "")
             
+            # Get sentiment styling for section title if applicable
+            title_style = ""
+            if section_title and sentiment_fragments and key in sentiment_fragments and sentiment_colors:
+                sentiment_data = sentiment_fragments[key]
+                max_sentiment = 0
+                max_sentiment_color = None
+                sentiment_info = []
+                
+                for sentiment_key, sentiment_color in sentiment_colors.items():
+                    if sentiment_key in sentiment_data and sentiment_data[sentiment_key] > 0:
+                        sentiment_value = sentiment_data[sentiment_key]
+                        sentiment_info.append(f"{sentiment_key}: {sentiment_value}")
+                        if sentiment_value > max_sentiment:
+                            max_sentiment = sentiment_value
+                            max_sentiment_color = sentiment_color
+                
+                if max_sentiment_color:
+                    sentiment_title = "; ".join(sentiment_info)
+                    title_style = f' style="border: 3px solid {max_sentiment_color}; padding: 5px; margin: 5px 0; border-radius: 3px;" title="Sentiment - {sentiment_title}"'
+            
             # Output the section title with highlighting if applicable
             if section_title:
                 heading_level = min(level, 6)  # Limit to h6
                 if highlights:
-                    highlighted_title = apply_highlights_to_fragment(section_title, highlights, key, 
-                                                                   sentiment_fragments.get(key) if sentiment_fragments else None,
-                                                                   sentiment_colors)
-                    html.append(f'<h{heading_level}>{highlighted_title}</h{heading_level}>')
+                    highlighted_title = apply_highlights_to_fragment(section_title, highlights, key)
+                    html.append(f'<h{heading_level}{title_style}>{highlighted_title}</h{heading_level}>')
                 else:
-                    html.append(f'<h{heading_level}>{section_title}</h{heading_level}>')
+                    html.append(f'<h{heading_level}{title_style}>{section_title}</h{heading_level}>')
             
             # Process the section content
             html.append('<div class="section">')
@@ -85,23 +103,41 @@ def process_document(doc_dict, html, level, highlights=None, parent_id='', senti
             # Direct content
             process_content(key, value, html, highlights, key, sentiment_fragments, sentiment_colors)
 
-
 def process_content(content_type, content, html, highlights=None, fragment_id=None, sentiment_fragments=None, sentiment_colors=None):
     """Process specific content types"""
-    sentiment_data = sentiment_fragments.get(fragment_id) if sentiment_fragments else None
+    # Get sentiment styling for this entire fragment
+    fragment_style = ""
+    if sentiment_fragments and fragment_id in sentiment_fragments and sentiment_colors:
+        sentiment_data = sentiment_fragments[fragment_id]
+        # Find highest sentiment score and apply border to entire fragment
+        max_sentiment = 0
+        max_sentiment_color = None
+        sentiment_info = []
+        
+        for sentiment_key, sentiment_color in sentiment_colors.items():
+            if sentiment_key in sentiment_data and sentiment_data[sentiment_key] > 0:
+                sentiment_value = sentiment_data[sentiment_key]
+                sentiment_info.append(f"{sentiment_key}: {sentiment_value}")
+                if sentiment_value > max_sentiment:
+                    max_sentiment = sentiment_value
+                    max_sentiment_color = sentiment_color
+        
+        if max_sentiment_color:
+            sentiment_title = "; ".join(sentiment_info)
+            fragment_style = f' style="border: 3px solid {max_sentiment_color}; padding: 5px; margin: 5px 0; border-radius: 3px;" title="Sentiment - {sentiment_title}"'
     
     if content_type == "text":
         if highlights and fragment_id:
-            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id, sentiment_data, sentiment_colors)
-            html.append(f'<div>{highlighted_content}</div>')
+            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id)
+            html.append(f'<div{fragment_style}>{highlighted_content}</div>')
         else:
-            html.append(f'<div>{content}</div>')
+            html.append(f'<div{fragment_style}>{content}</div>')
     elif content_type == "textsmall":
         if highlights and fragment_id:
-            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id, sentiment_data, sentiment_colors)
-            html.append(f'<div class="textsmall">{highlighted_content}</div>')
+            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id)
+            html.append(f'<div class="textsmall"{fragment_style}>{highlighted_content}</div>')
         else:
-            html.append(f'<div class="textsmall">{content}</div>')
+            html.append(f'<div class="textsmall"{fragment_style}>{content}</div>')
     elif content_type == "image":
         process_image(content, html)
     elif content_type == "table":
@@ -409,6 +445,19 @@ def process_tags():
                     'type': 'figis'
                 })
     
+    # Build tags summary for display
+    tags_summary = {}
+    for match in all_matches:
+        tag_type = match['type']
+        match_value = match['match']
+        if tag_type not in tags_summary:
+            tags_summary[tag_type] = set()
+        tags_summary[tag_type].add(match_value)
+
+    # Convert sets to sorted lists for consistent display
+    for tag_type in tags_summary:
+        tags_summary[tag_type] = sorted(list(tags_summary[tag_type]))
+    
     # Sort matches by start position (descending) to avoid position shifts when highlighting
     all_matches.sort(key=lambda x: x['start'], reverse=True)
     
@@ -440,13 +489,12 @@ def process_tags():
                      document=document,
                      highlighted_text=highlighted_text,
                      matches_found=len(all_matches),
+                     tags_summary=tags_summary,
                      selected_tags=selected_tags,
                      selected_similarity=selected_similarity,
                      colors=colors,
                      form_data=request.form,
                      similarity_results=similarity_results)
-
-
 
 @app.route('/document/<index>')
 def document_view(index):
@@ -601,6 +649,19 @@ def visualize_view():
                         'type': 'figis'
                     })
         
+        # Build tags summary for display
+        tags_summary = {}
+        for match in all_matches:
+            tag_type = match['type']
+            match_value = match['match']
+            if tag_type not in tags_summary:
+                tags_summary[tag_type] = set()
+            tags_summary[tag_type].add(match_value)
+
+        # Convert sets to sorted lists for consistent display
+        for tag_type in tags_summary:
+            tags_summary[tag_type] = sorted(list(tags_summary[tag_type]))
+        
         # Process similarity results
         similarity_results = None
         available_sentiment_keys = []
@@ -617,13 +678,21 @@ def visualize_view():
         sentiment_colors = {}
         sentiment_fragments = {}
 
-        if selected_sentiment_keys and similarity_results:
-            # Get colors for each sentiment key
-            for key in selected_sentiment_keys:
+        # Set defaults for first-time sentiment analysis
+        if available_sentiment_keys and not selected_sentiment_keys:
+            selected_sentiment_keys = available_sentiment_keys.copy()
+
+        if available_sentiment_keys:
+            # Set default colors for all available keys
+            for key in available_sentiment_keys:
                 color_key = f'sentiment_{key}_color'
                 if color_key in request.form:
                     sentiment_colors[key] = request.form[color_key]
-            
+                else:
+                    # Set default color
+                    sentiment_colors[key] = get_default_sentiment_color(key)
+
+        if selected_sentiment_keys and similarity_results:
             # Build fragment-to-sentiment mapping
             for fragment_data in similarity_results:
                 fragment_id = fragment_data.get('fragment_id')
@@ -637,6 +706,7 @@ def visualize_view():
                              document=document,
                              data_visualization=data_visualization,
                              matches_found=len(all_matches),
+                             tags_summary=tags_summary,
                              selected_tags=selected_tags,
                              selected_similarity=selected_similarity,
                              colors=colors,
@@ -652,6 +722,7 @@ def visualize_view():
         return render_template('visualize.html', 
                              document=document,
                              data_visualization='\n'.join(html))
+    
 @app.route('/document/data')
 def data_view():
     global cache

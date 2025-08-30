@@ -130,7 +130,16 @@
 
   {% if highlighted_text %}
   <h3>Text with Tags</h3>
-  <p><strong>Tags found:</strong> {{ matches_found }}</p>
+  {% if tags_summary %}
+  <p><strong>Tags found:</strong></p>
+  <ul>
+    {% for tag_type, matches in tags_summary.items() %}
+    <li><strong>{{ tag_type|title }}:</strong> {{ matches|join(', ') }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p><strong>No tags found</strong></p>
+  {% endif %}
   <div>{{ highlighted_text|safe }}</div>
   {% else %}
   <h3>Text</h3>

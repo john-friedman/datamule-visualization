@@ -18,7 +18,7 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 - Adding custom templates to change style
 - chatbot integration
 - hide buttons that are not relevant to certain filings.
-
+- notes explaining what everything is and underlying structure
 
 ## Improvements to be made to datamule
 - Change how submissions load from list based to hash. O(1).

@@ -126,11 +126,11 @@
             <fieldset>
                 <legend>Sentiment Visualization:</legend>
                 {% for key in available_sentiment_keys %}
-                <input type="checkbox" id="sentiment_{{ key }}" name="sentiment_keys" value="{{ key }}" {% if
-                    selected_sentiment_keys and key in selected_sentiment_keys %}checked{% endif %}>
+                <input type="checkbox" id="sentiment_{{ key }}" name="sentiment_keys" value="{{ key }}" {% if not
+                    selected_sentiment_keys or key in selected_sentiment_keys %}checked{% endif %}>
                 <label for="sentiment_{{ key }}">{{ key|title }}</label>
                 <input type="color" id="sentiment_{{ key }}_color" name="sentiment_{{ key }}_color"
-                    value="{% if sentiment_colors and key in sentiment_colors %}{{ sentiment_colors[key] }}{% else %}#808080{% endif %}">
+                    value="{% if sentiment_colors and key in sentiment_colors %}{{ sentiment_colors[key] }}{% else %}{% if key == 'negative' %}#ff4444{% elif key == 'positive' %}#44ff44{% elif key == 'uncertainty' %}#ffaa44{% elif key == 'litigious' %}#aa44ff{% elif key == 'strong_modal' %}#4444ff{% elif key == 'weak_modal' %}#44aaff{% elif key == 'constraining' %}#ff44aa{% else %}#888888{% endif %}{% endif %}">
                 <br>
                 {% endfor %}
             </fieldset>
@@ -140,14 +140,20 @@
         </form>
     </section>
 
-    {% if similarity_results %}
-    <h3>Similarity Analysis Results:</h3>
-    <pre>{{ similarity_results }}</pre>
-    {% endif %}
+
 
     {% if data_visualization %}
     <h3>Visualize with Tags</h3>
-    <p><strong>Tags found:</strong> {{ matches_found }}</p>
+    {% if tags_summary %}
+    <p><strong>Tags found:</strong></p>
+    <ul>
+        {% for tag_type, matches in tags_summary.items() %}
+        <li><strong>{{ tag_type|title }}:</strong> {{ matches|join(', ') }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p><strong>No tags found</strong></p>
+    {% endif %}
     <div>{{ data_visualization|safe }}</div>
     {% else %}
     <div>{{ document.data }}</div>
