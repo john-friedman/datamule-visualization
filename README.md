@@ -1,6 +1,6 @@
 # secbrowser [NOT READY FOR USE]
 
-A simple interface to interact with SEC filings. Part of [datamule](https://github.com/john-friedman/datamule-python).
+A simple interface to interact with SEC filings. Built as a debugging tool for [datamule](https://github.com/john-friedman/datamule-python).
 
 ## Why this was made
 
@@ -13,7 +13,6 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 - You like visualizations
 
 ## Features TBD
-- fix similarity not wrapping around sections.  
 - Adding CSS
 - Adding custom templates to change style
 - chatbot integration
