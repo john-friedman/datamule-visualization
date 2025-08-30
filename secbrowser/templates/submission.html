@@ -44,7 +44,8 @@
 
     {% set ns = namespace(has_xbrl=false) %}
     {% for doc in submission.metadata.content['documents'] %}
-    {% if doc['type'] in ['EX-100.INS', 'EX-101.INS'] or doc['filename'].endswith('_htm.xml') %}
+    {# Check if 'filename' key exists AND then check its value #}
+    {% if doc['type'] in ['EX-100.INS', 'EX-101.INS'] or ('filename' in doc and doc['filename'].endswith('_htm.xml')) %}
     {% set ns.has_xbrl = true %}
     {% endif %}
     {% endfor %}
@@ -57,7 +58,7 @@
             <button onclick="window.open('/fundamentals', '_blank')">Fundamentals</button>
         </div>
     </details>
-    {% endif %} 
+    {% endif %}
 
 
 </body>

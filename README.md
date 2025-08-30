@@ -13,8 +13,7 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 - You like visualizations
 
 ## Features TBD
-- add similarity
-- list out tags found (to check for issues with viz)
+- fix similarity not wrapping around sections.  
 - Adding CSS
 - Adding custom templates to change style
 - chatbot integration
@@ -27,3 +26,6 @@ A simple interface to interact with SEC filings. Part of [datamule](https://gith
 - make document.text tables nicer
 - make tables failsoft.
 - fix how sentiment dictionaries are accessed. right now it needs the dict, but doesnt specify it when called.
+- submission should expose no xbrl or fundamentals
+- document should expose no tables / parsed data etc
+- document should expose no viz

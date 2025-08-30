@@ -6,7 +6,7 @@ from datamule import Portfolio
 
 
 # move to utils
-def apply_highlights_to_fragment(text, highlights, fragment_id):
+def apply_highlights_to_fragment(text, highlights, fragment_id, sentiment_data=None, sentiment_colors=None):
     """Apply highlighting to a specific text fragment"""
     fragment_matches = [h for h in highlights if h.get('fragment_id') == fragment_id]
     if not fragment_matches:
@@ -20,12 +20,28 @@ def apply_highlights_to_fragment(text, highlights, fragment_id):
         color = match['color']
         match_type = match['type']
         original = highlighted_text[start:end]
-        span = f'<span style="background-color: {color}; color: white; padding: 2px; border-radius: 3px;" title="{match_type}: {original}">{original}</span>'
+        
+        # Build border style if sentiment data exists
+        border_style = ""
+        if sentiment_data and sentiment_colors:
+            # Find the highest sentiment score to apply one border
+            max_sentiment = 0
+            max_sentiment_color = None
+            for sentiment_key, sentiment_color in sentiment_colors.items():
+                if sentiment_key in sentiment_data and sentiment_data[sentiment_key] > max_sentiment:
+                    max_sentiment = sentiment_data[sentiment_key]
+                    max_sentiment_color = sentiment_color
+            
+            if max_sentiment_color:
+                border_style = f"; border: 3px solid {max_sentiment_color}"
+        
+        span = f'<span style="background-color: {color}; color: white; padding: 2px; border-radius: 3px{border_style}" title="{match_type}: {original}">{original}</span>'
         highlighted_text = highlighted_text[:start] + span + highlighted_text[end:]
     
     return highlighted_text
 
-def process_document(doc_dict, html, level, highlights=None, parent_id=''):
+
+def process_document(doc_dict, html, level, highlights=None, parent_id='', sentiment_fragments=None, sentiment_colors=None):
     """Process document elements recursively"""
     # Sort keys to ensure numerical order for items like "1", "2", etc.
     try:
@@ -45,7 +61,9 @@ def process_document(doc_dict, html, level, highlights=None, parent_id=''):
             if section_title:
                 heading_level = min(level, 6)  # Limit to h6
                 if highlights:
-                    highlighted_title = apply_highlights_to_fragment(section_title, highlights, key)  # Changed from 'title' to 'key'
+                    highlighted_title = apply_highlights_to_fragment(section_title, highlights, key, 
+                                                                   sentiment_fragments.get(key) if sentiment_fragments else None,
+                                                                   sentiment_colors)
                     html.append(f'<h{heading_level}>{highlighted_title}</h{heading_level}>')
                 else:
                     html.append(f'<h{heading_level}>{section_title}</h{heading_level}>')
@@ -56,28 +74,31 @@ def process_document(doc_dict, html, level, highlights=None, parent_id=''):
             # Handle direct content fields
             for attr_key, attr_value in value.items():
                 if attr_key not in ["title", "class", "contents", "standardized_title"]:
-                    process_content(attr_key, attr_value, html, highlights, key)  # Already correct - using 'key'
+                    process_content(attr_key, attr_value, html, highlights, key, sentiment_fragments, sentiment_colors)
             
             # Process contents dictionary if it exists
             if "contents" in value and value["contents"]:
-                process_document(value["contents"], html, level + 1, highlights, current_id)
+                process_document(value["contents"], html, level + 1, highlights, current_id, sentiment_fragments, sentiment_colors)
                 
             html.append('</div>')
         else:
             # Direct content
-            process_content(key, value, html, highlights, key)
-            
-def process_content(content_type, content, html, highlights=None, fragment_id=None):
+            process_content(key, value, html, highlights, key, sentiment_fragments, sentiment_colors)
+
+
+def process_content(content_type, content, html, highlights=None, fragment_id=None, sentiment_fragments=None, sentiment_colors=None):
     """Process specific content types"""
+    sentiment_data = sentiment_fragments.get(fragment_id) if sentiment_fragments else None
+    
     if content_type == "text":
         if highlights and fragment_id:
-            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id)
+            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id, sentiment_data, sentiment_colors)
             html.append(f'<div>{highlighted_content}</div>')
         else:
             html.append(f'<div>{content}</div>')
     elif content_type == "textsmall":
         if highlights and fragment_id:
-            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id)
+            highlighted_content = apply_highlights_to_fragment(content, highlights, fragment_id, sentiment_data, sentiment_colors)
             html.append(f'<div class="textsmall">{highlighted_content}</div>')
         else:
             html.append(f'<div class="textsmall">{content}</div>')
@@ -146,7 +167,7 @@ def process_table(table_data, html):
     
     html.append('</table>')
 
-def visualize_data_as_html(data, highlights=None):
+def visualize_data_as_html(data, highlights=None, sentiment_fragments=None, sentiment_colors=None):
     data_dict = data
     html = []
     
@@ -252,7 +273,7 @@ def visualize_data_as_html(data, highlights=None):
     # Process the document structure
     if "document" in data_dict:
         html.append('<div class="document">')
-        process_document(data_dict["document"], html, 1, highlights)
+        process_document(data_dict["document"], html, 1, highlights, '', sentiment_fragments, sentiment_colors)
         html.append('</div>')
     
     # Add HTML closing tags
@@ -582,12 +603,35 @@ def visualize_view():
         
         # Process similarity results
         similarity_results = None
+        available_sentiment_keys = []
         if 'loughran_mcdonald' in selected_similarity:
             similarity_results = document.data.similarity.loughran_mcdonald
-        
+            if similarity_results:
+                # Extract available keys from first fragment (excluding fragment_id and total_words)
+                first_fragment = similarity_results[0] if similarity_results else {}
+                available_sentiment_keys = [k for k in first_fragment.keys() 
+                                          if k not in ['fragment_id', 'total_words']]
 
+        # Handle sentiment visualization if keys are selected
+        selected_sentiment_keys = request.form.getlist('sentiment_keys')
+        sentiment_colors = {}
+        sentiment_fragments = {}
+
+        if selected_sentiment_keys and similarity_results:
+            # Get colors for each sentiment key
+            for key in selected_sentiment_keys:
+                color_key = f'sentiment_{key}_color'
+                if color_key in request.form:
+                    sentiment_colors[key] = request.form[color_key]
+            
+            # Build fragment-to-sentiment mapping
+            for fragment_data in similarity_results:
+                fragment_id = fragment_data.get('fragment_id')
+                if fragment_id is not None:
+                    sentiment_fragments[fragment_id] = fragment_data
+        
         # Generate visualization HTML with highlighting
-        data_visualization = '\n'.join(visualize_data_as_html(document.data, all_matches))
+        data_visualization = '\n'.join(visualize_data_as_html(document.data, all_matches, sentiment_fragments, sentiment_colors))
         
         return render_template('visualize.html', 
                              document=document,
@@ -597,7 +641,10 @@ def visualize_view():
                              selected_similarity=selected_similarity,
                              colors=colors,
                              form_data=request.form,
-                             similarity_results=similarity_results)
+                             similarity_results=similarity_results,
+                             available_sentiment_keys=available_sentiment_keys,
+                             selected_sentiment_keys=selected_sentiment_keys,
+                             sentiment_colors=sentiment_colors)
     
     else:
         # Default GET request - show standard visualization
@@ -605,7 +652,6 @@ def visualize_view():
         return render_template('visualize.html', 
                              document=document,
                              data_visualization='\n'.join(html))
-
 @app.route('/document/data')
 def data_view():
     global cache
